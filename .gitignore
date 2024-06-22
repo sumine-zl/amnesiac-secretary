@@ -1,0 +1,46 @@
+# ignore all files starting ~
+~*
+
+# ignore node/grunt dependency directories
+node_modules/
+
+# Ignore build directories.
+/build
+/dist
+
+# ignore OS generated files
+.DS_Store
+ehthumbs.db
+Thumbs.db
+
+# ignore log files and databases
+*.log
+*.sql
+*.sqlite
+
+# ignore compiled files
+*.a
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# ignore packaged files
+*.7z
+*.gz
+*.jar
+*.rar
+*.tar
+*.tgz
+*.xz
+*.zip
+
+# ignore private/secret files
+*.der
+*.key
+*.pem
+
+# track these files, if they exist
+!.gitignore

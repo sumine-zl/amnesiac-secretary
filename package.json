@@ -1,0 +1,13 @@
+{
+  "name": "amnesiac-secretary",
+  "description": "A secretary for amnesiacs",
+  "version": "0.1.0",
+  "author": "Sumine_ZL",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sumine-zl/amnesiac-secretary.git"
+  },
+  "dependencies": {
+  }
+}
