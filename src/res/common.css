@@ -1,0 +1,18 @@
+/* common.css */
+
+.hidden {
+    display: none;
+}
+
+.footnote {
+    color: grey;
+    font-size: 14px;
+}
+
+.right {
+    float: right;
+}
+
+button.danger {
+    background-color: crimson;
+}

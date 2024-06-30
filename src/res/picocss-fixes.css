@@ -1,0 +1,16 @@
+/* picocss-fixes.css */
+
+/* Custom fixes for picocss */
+
+hr.separator {
+    margin-top: 2rem;
+}
+
+input.auto {
+    width: auto;
+}
+
+input[type=range].inline {
+    margin-right: 1rem;
+    height: 3rem;
+}
