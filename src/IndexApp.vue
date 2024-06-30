@@ -323,9 +323,9 @@ onMounted(() => {
         <hr class="separator" />
         <section>
             <fieldset>
-                <label>#4 Service identity, case-insensitive:</label>
+                <label>#4 Service identity, case-sensitive:</label>
                 <input type="text" v-model.trim="input.service" :disabled="!state.unlocked" placeholder="Domain Name / Software Title / etc." @input="autofillForm" />
-                <label>#5 User identity, case-insensitive:</label>
+                <label>#5 User identity, case-sensitive:</label>
                 <input type="text" v-model.trim="input.user" :disabled="!state.unlocked" placeholder="Username / Email / etc." />
                 <label>Revision of the secret: <span>{{input.revision}}</span></label>
                 <input type="range" min="0" :max="REVISION_MAX" v-model.number="input.revision" :disabled="!state.unlocked" />
