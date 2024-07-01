@@ -5,7 +5,7 @@ import Secretary from './lib/Secretary.js';
 import Dialog from './lib/Dialog.vue';
 
 // Configs
-const VERSION = '0.1.1';
+const VERSION = '0.1.2';
 const REVISION_MAX = 15;
 const LENGTH_MAX = 32;
 
