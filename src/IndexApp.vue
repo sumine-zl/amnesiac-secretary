@@ -179,12 +179,12 @@ async function generateSecret() {
         await alert('Failed to generate secret');
         return;
     }
-    let offset = -1;
+    let offset = 0;
     let hit = preferences.some(( v, i ) => {
         if ( v[0] !== input.service ) {
             return false;
         }
-        if ( offset === -1 ) {
+        if ( offset === 0 ) {
             offset = i;
         }
         if ( v[1] !== input.user ) {
@@ -196,9 +196,6 @@ async function generateSecret() {
     });
     if ( hit ) {
         return;
-    }
-    if ( offset === -1 ) {
-        offset = 0;
     }
     preferences.splice( offset, 0, [
         input.service,
