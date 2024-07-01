@@ -155,7 +155,6 @@ async function resetPassphrase() {
         resetObject( credential, defaultCredential );
         resetObject( state, defaultState );
         resetArray( preferences );
-        clearClipboard();
     }
 }
 
@@ -208,7 +207,6 @@ async function generateSecret() {
 function resetSecret() {
     resetObject( output, defaultOutput );
     resetObject( input, defaultInput );
-    clearClipboard();
 }
 
 async function copySecret() {
@@ -220,7 +218,6 @@ async function copySecret() {
 
 function clearSecret() {
     resetObject( output, defaultOutput );
-    clearClipboard();
 }
 
 async function exportCiphertext() {
@@ -266,7 +263,6 @@ async function copyBundle() {
 
 function clearBundle() {
     resetObject( output, defaultOutput );
-    clearClipboard();
 }
 
 function autofillForm() {
