@@ -14,15 +14,15 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 index: 'index.html'
-            },
-        },
+            }
+        }
     },
     plugins: [
         vue(),
         viteSingleFile(),
         createHtmlPlugin({
-            minify: true,
-        }),
+            minify: true
+        })
     ],
     publicDir: 'pub',
     resolve: {
