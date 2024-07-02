@@ -115,6 +115,7 @@ async function confirmPassphrase() {
         return;
     }
     state.unlocking = true;
+    clearClipboard();
     let ciphertext = credential.ciphertext;
     if ( ciphertext ) {
         const [ section1, section2 ] = ciphertext.split('|');
