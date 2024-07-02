@@ -291,15 +291,26 @@ function autofillForm() {
     });
 }
 
+function applyPreference( index ) {
+    const preference = preferences[ index ];
+    if ( ! preference ) {
+        throw new Error('The specified preference could not be found');
+    }
+    input.service = preference[0];
+    input.user = preference[1];
+    input.revision = preference[2];
+    input.length = preference[3];
+}
+
+function removePreference( index ) {
+    preferences.splice( index, 1 );
+}
+
 async function removeAllPreferences() {
     const choice = await confirm('Are you sure want to remove all the preferences?');
     if ( choice === 'confirm') {
         resetArray( preferences );
     }
-}
-
-function removePreference( index ) {
-    preferences.splice( index, 1 );
 }
 
 onMounted(() => {
@@ -383,7 +394,7 @@ onMounted(() => {
                         <th><a href="javascript:;" @click="removeAllPreferences">Remove All</a></th>
                     </tr>
                     <tr v-for="( v, i ) in preferences">
-                        <td>{{ v[0] }}</td>
+                        <td><a href="javascript:;" @click="applyPreference(i)">{{ v[0] }}</a></td>
                         <td>{{ v[1] }}</td>
                         <td>{{ v[2] }}</td>
                         <td>{{ v[3] }}</td>
