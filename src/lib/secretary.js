@@ -2,8 +2,6 @@
 
 import Util from './Util.js';
 
-const Crypto = window.crypto.subtle;
-
 const BASE_ITERATION = 1048320;  // in times
 const CIPHER_BUFFER_SIZE = 92;  // in bytes
 const SALT_SPLIT_POINT = 12;  // in bytes
@@ -22,11 +20,32 @@ function _getSpice( buf ) {
     return (new Uint8Array( buf )).reduce(( a, b ) =>  a ^ b, 0 );
 }
 
-async function init() {
-    reset();
+async function testEnvironment() {
+    const toString = Object.prototype.toString;
+    try {
+        const getRandomValues = window.crypto.getRandomValues;
+        const Crypto = window.crypto.subtle;
+        return toString.call( getRandomValues ) === '[object Function]' &&
+            toString.call( Crypto.importKey ) === '[object Function]' &&
+            toString.call( Crypto.exportKey ) === '[object Function]' &&
+            toString.call( Crypto.digest ) === '[object Function]' &&
+            toString.call( Crypto.deriveBits ) === '[object Function]' &&
+            toString.call( Crypto.encrypt ) === '[object Function]' &&
+            toString.call( Crypto.decrypt ) === '[object Function]'
+        ;
+    } catch ( err ) {
+        return false;
+    }
+}
+
+async function reset() {
+    _cipher = null;
+    _key = null;
+    _salt = null;
 }
 
 async function unlock( passphrase, ciphertext = '' ) {
+    const Crypto = window.crypto.subtle;
     reset();
     let encrypted = null;
     let spice = null;
@@ -86,13 +105,8 @@ async function unlock( passphrase, ciphertext = '' ) {
     });
 }
 
-async function reset() {
-    _cipher = null;
-    _key = null;
-    _salt = null;
-}
-
 async function generate( identity1, identity2, revision, length ) {
+    const Crypto = window.crypto.subtle;
     if ( ! _cipher || ! _key || ! _salt ) {
         throw new Error('No cipher unlocked');
     }
@@ -157,6 +171,7 @@ async function generate( identity1, identity2, revision, length ) {
 }
 
 async function encode( passphrase = '' ) {
+    const Crypto = window.crypto.subtle;
     if ( ! _cipher || ! _key || ! _salt ) {
         throw new Error('No cipher unlocked');
     }
@@ -214,9 +229,9 @@ async function encode( passphrase = '' ) {
 }
 
 export default {
-    init,
-    unlock,
+    testEnvironment,
     reset,
+    unlock,
     generate,
     encode,
 };

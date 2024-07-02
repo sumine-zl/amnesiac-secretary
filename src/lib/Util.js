@@ -24,6 +24,12 @@ export default {
         }).join('');
     },
 
+    testCompressionSupport() {
+        return ( typeof CompressionStream === 'function' &&
+            typeof DecompressionStream === 'function'
+        );
+    },
+
     async compress( buf ) {
         const stream = new CompressionStream('deflate-raw');
         const writer = stream.writable.getWriter();

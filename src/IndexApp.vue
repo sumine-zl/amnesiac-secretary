@@ -47,6 +47,14 @@ const output = reactive( Object.assign({}, defaultOutput ));
 // List of preferences
 const preferences = reactive([]);
 
+// Check for browser features
+const features = computed(() => {
+    return {
+        compress: Util.testCompressionSupport(),
+        crypto: Secretary.testEnvironment()
+    };
+});
+
 // Disable the inputs except unlock section while under computing
 const inputDisabled = computed(() => {
     return !state.unlocked || state.generating;
@@ -74,7 +82,7 @@ function hideAllDialogs() {
     secretDialog.show = false;
 }
 
-async function alert( msg, closedCallback ) {
+async function alert( msg ) {
     hideAllDialogs();
     alertDialog.message = msg;
     alertDialog.show = true;
@@ -311,12 +319,14 @@ async function removeAllPreferences() {
 }
 
 onMounted(() => {
-    return Secretary.init();  // no wait
+    // Nothing
 });
 </script>
 
 <template>
-<main class="container">
+<div v-if="!features.crypto">Your browser does not support WebCrypto, try with another one</div>
+<div v-else-if="!features.compress">Your browser does not support CompressionStream, try with another one</div>
+<main class="container" v-else>
     <br />
     <article>
         <section>
