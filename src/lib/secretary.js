@@ -26,7 +26,7 @@ async function init() {
     reset();
 }
 
-async function unlock( passphrase, ciphertext ) {
+async function unlock( passphrase, ciphertext = '' ) {
     reset();
     let encrypted = null;
     let spice = null;
@@ -156,7 +156,7 @@ async function generate( identity1, identity2, revision, length ) {
     });
 }
 
-async function encode( passphrase ) {
+async function encode( passphrase = '' ) {
     if ( ! _cipher || ! _key || ! _salt ) {
         throw new Error('No cipher unlocked');
     }
