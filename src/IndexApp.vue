@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, onMounted } from 'vue';
+import { computed, onMounted, reactive } from 'vue';
 import Util from './lib/Util.js';
 import Secretary from './lib/Secretary.js';
 import Dialog from './lib/Dialog.vue';
@@ -13,6 +13,7 @@ const LENGTH_MAX = 32;
 const defaultState = {
     unlocked: false,
     unlocking: false,
+    generating: false,
     showSecret: false,
 };
 const defaultCredential = {
@@ -45,6 +46,11 @@ const output = reactive( Object.assign({}, defaultOutput ));
 
 // List of preferences
 const preferences = reactive([]);
+
+// Disable the inputs except unlock section while under computing
+const inputDisabled = computed(() => {
+    return !state.unlocked || state.generating;
+});
 
 // Dialogs
 const alertDialog = reactive({
@@ -168,6 +174,7 @@ async function generateSecret() {
         await alert('The user identity cannot be empty');
         return;
     }
+    state.generating = true;
     try {
         output.secret = await Secretary.generate(
             input.service,
@@ -177,6 +184,7 @@ async function generateSecret() {
         );
     } catch ( err ) {
         await alert('Failed to generate secret');
+        state.generating = false;
         return;
     }
     let offset = 0;
@@ -195,6 +203,7 @@ async function generateSecret() {
         return true;
     });
     if ( hit ) {
+        state.generating = false;
         return;
     }
     preferences.splice( offset, 0, [
@@ -203,6 +212,7 @@ async function generateSecret() {
         input.revision,
         input.length
     ]);
+    state.generating = false;
 }
 
 function resetSecret() {
@@ -318,17 +328,17 @@ onMounted(() => {
         <section>
             <fieldset>
                 <label>#4 Service identity, case-sensitive:</label>
-                <input type="text" v-model.trim="input.service" :disabled="!state.unlocked" placeholder="Domain Name / Software Title / etc." @input="autofillForm" />
+                <input type="text" v-model.trim="input.service" :disabled="inputDisabled" placeholder="Domain Name / Software Title / etc." @input="autofillForm" />
                 <label>#5 User identity, case-sensitive:</label>
-                <input type="text" v-model.trim="input.user" :disabled="!state.unlocked" placeholder="Username / Email / etc." />
+                <input type="text" v-model.trim="input.user" :disabled="inputDisabled" placeholder="Username / Email / etc." />
                 <label>Revision of the secret: <span>{{input.revision}}</span></label>
-                <input type="range" min="0" :max="REVISION_MAX" v-model.number="input.revision" :disabled="!state.unlocked" />
+                <input type="range" min="0" :max="REVISION_MAX" v-model.number="input.revision" :disabled="inputDisabled" />
                 <label>Length of the secret: <span>{{input.length}}</span></label>
-                <input type="range" min="8" :max="LENGTH_MAX" v-model.number="input.length" :disabled="!state.unlocked" />
+                <input type="range" min="8" :max="LENGTH_MAX" v-model.number="input.length" :disabled="inputDisabled" />
                 <small>&nbsp;</small>
                 <div class="grid">
-                    <button :disabled="!state.unlocked" @click="generateSecret">#6 Generate</button>
-                    <button class="outline" :disabled="!state.unlocked" @click="resetSecret">Reset</button>
+                    <button :disabled="inputDisabled" :aria-busy="state.generating" @click="generateSecret">#6 Generate</button>
+                    <button class="outline" :disabled="inputDisabled" @click="resetSecret">Reset</button>
                 </div>
             </fieldset>
         </section>
@@ -336,11 +346,11 @@ onMounted(() => {
         <section>
             <fieldset>
                 <label>Generated secret:</label>
-                <input type="password" v-model="output.secret" readonly :disabled="!state.unlocked" />
+                <input type="password" v-model="output.secret" readonly :disabled="inputDisabled" />
                 <div class="grid">
-                    <button :disabled="!state.unlocked || !output.secret" @click="copySecret">#7 Copy</button>
-                    <button class="danger" :disabled="!state.unlocked || !output.secret" @click="secretDialog.show = true">Show</button>
-                    <button class="outline" :disabled="!state.unlocked" @click="clearSecret">Clear</button>
+                    <button :disabled="inputDisabled || !output.secret" @click="copySecret">#7 Copy</button>
+                    <button class="danger" :disabled="inputDisabled || !output.secret" @click="secretDialog.show = true">Show</button>
+                    <button class="outline" :disabled="inputDisabled" @click="clearSecret">Clear</button>
                 </div>
             </fieldset>
         </section>
@@ -348,15 +358,15 @@ onMounted(() => {
         <section>
             <fieldset>
                 <label>New Passphrase:</label>
-                <input type="password" v-model="input.newPass" :disabled="!state.unlocked" placeholder="Leave this empty if you want to keep current passphrase unchanged" />
+                <input type="password" v-model="input.newPass" :disabled="inputDisabled" placeholder="Leave this empty if you want to keep current passphrase unchanged" />
                 <label>Export ciphertext:</label>
-                <textarea v-model="output.exportedText" readonly :disabled="!state.unlocked" placeholder="Choose either [Export Ciphertext] to export only the ciphertext or [Export Bundle] to generate a bundle of ciphertext along with all the preferences"></textarea>
+                <textarea v-model="output.exportedText" readonly :disabled="inputDisabled" placeholder="Choose either [Export Ciphertext] to export only the ciphertext or [Export Bundle] to generate a bundle of ciphertext along with all the preferences"></textarea>
                 <small>NOTICE: Be sure to save the ciphertext in a safe place</small>
                 <div class="grid">
-                    <button :disabled="!state.unlocked" @click="exportCiphertext">Export Ciphertext</button>
-                    <button :disabled="!state.unlocked" @click="exportAsBundle">#8 Export As Bundle</button>
-                    <button class="outline" :disabled="!state.unlocked || !output.exportedText" @click="copyBundle">Copy</button>
-                    <button class="outline" :disabled="!state.unlocked" @click="clearBundle">Clear</button>
+                    <button :disabled="inputDisabled" @click="exportCiphertext">Export Ciphertext</button>
+                    <button :disabled="inputDisabled" @click="exportAsBundle">#8 Export As Bundle</button>
+                    <button class="outline" :disabled="inputDisabled || !output.exportedText" @click="copyBundle">Copy</button>
+                    <button class="outline" :disabled="inputDisabled" @click="clearBundle">Clear</button>
                 </div>
             </fieldset>
         </section>
