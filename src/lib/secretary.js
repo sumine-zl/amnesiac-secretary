@@ -77,7 +77,7 @@ async function unlock( passphrase, ciphertext = '' ) {
             iterations: BASE_ITERATION + spice
         }, v, UNIFORM_KEY_LENGTH );
     }).then(( v ) => {  // derived passphrase bits
-        _key = v;
+        _key = new Uint8Array( v );
         return Crypto.importKey(
             'raw',
             v,
