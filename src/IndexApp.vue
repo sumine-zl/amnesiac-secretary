@@ -6,30 +6,32 @@ import Dialog from './lib/Dialog.vue';
 import { version as VERSION } from '../package.json';
 
 // Configs
-const REVISION_MAX = 15;
-const LENGTH_MAX = 32;
+const INPUT_MAX_CIPHER_LENGTH = 4096;
+const INPUT_MAX_REVISION = 15;
+const INPUT_MAX_LENGTH = 32;
 
 // Defaults
 const defaultState = {
     unlocked: false,
     unlocking: false,
     generating: false,
-    showSecret: false,
+    showSecret: false
 };
 const defaultCredential = {
+    cipherLength: 1024,
     ciphertext: '',
-    passphrase: '',
+    passphrase: ''
 };
 const defaultInput = {
     service: '',
     user: '',
     revision: 0,
     length: 12,
-    newPass: '',
+    newPass: ''
 };
 const defaultOutput ={
     secret: '',
-    exportedText: '',
+    exportedText: ''
 };
 
 // States
@@ -47,6 +49,12 @@ const output = reactive( Object.assign({}, defaultOutput ));
 // List of preferences
 const preferences = reactive([]);
 
+// Bit length for the new cipher
+const chosenBitLength = computed(() => {
+    return ( ! credential.ciphertext ? credential.cipherLength :
+        'N/A, The existing ciphertext above will be used'
+    );
+});
 // Check for browser features
 const features = computed(() => {
     return {
@@ -54,7 +62,6 @@ const features = computed(() => {
         crypto: Secretary.testEnvironment()
     };
 });
-
 // Disable the inputs except unlock section while under computing
 const inputDisabled = computed(() => {
     return !state.unlocked || state.generating;
@@ -131,6 +138,7 @@ async function confirmPassphrase() {
     state.unlocking = true;
     clearClipboard();
     let ciphertext = credential.ciphertext;
+    let bitLength = credential.cipherLength;
     let payload = null;
     if ( ciphertext ) {
         [ ciphertext, payload ] = ciphertext.split('|');
@@ -138,7 +146,11 @@ async function confirmPassphrase() {
     const passphrase = credential.passphrase;
     credential.passphrase = '';
     try {
-        const result = await Secretary.unlock( passphrase, ciphertext );
+        const result = await Secretary.unlock(
+            passphrase,
+            ciphertext,
+            bitLength
+        );
         if ( ! result ) {
             throw new Error();
         }
@@ -334,7 +346,9 @@ onMounted(() => {
         <section>
             <fieldset>
                 <label>#1 Paste existing ciphertext if available:</label>
-                <textarea v-model.trim="credential.ciphertext" :disabled="state.unlocked" :aria-busy="state.unlocking" placeholder="Or leave this empty and a new one will be generated automatically"></textarea>
+                <textarea v-model.trim="credential.ciphertext" :disabled="state.unlocked" :aria-busy="state.unlocking" placeholder="Leaving this empty will generate a new one automatically"></textarea>
+                <label>#0 Or choose a bit length for the new cipher: <span>{{chosenBitLength}}</span></label>
+                <input type="range" min="256" :max="INPUT_MAX_CIPHER_LENGTH" step="256" v-model.number="credential.cipherLength" :disabled="state.unlocked || credential.ciphertext.length > 0" />
                 <label>#2 Enter the passphrase for the ciphertext:</label>
                 <input type="password" v-model="credential.passphrase" required :disabled="state.unlocked" placeholder="Use a memorable passphrase" />
                 <small>Do not save this passphrase in any place other than your brain, you only need to remember this one</small>
@@ -352,9 +366,9 @@ onMounted(() => {
                 <label>#5 User identity, case-sensitive:</label>
                 <input type="text" v-model.trim="input.user" :disabled="inputDisabled" placeholder="Username / Email / etc." />
                 <label>Revision of the secret: <span>{{input.revision}}</span></label>
-                <input type="range" min="0" :max="REVISION_MAX" v-model.number="input.revision" :disabled="inputDisabled" />
+                <input type="range" min="0" :max="INPUT_MAX_REVISION" v-model.number="input.revision" :disabled="inputDisabled" />
                 <label>Length of the secret: <span>{{input.length}}</span></label>
-                <input type="range" min="8" :max="LENGTH_MAX" v-model.number="input.length" :disabled="inputDisabled" />
+                <input type="range" min="8" :max="INPUT_MAX_LENGTH" v-model.number="input.length" :disabled="inputDisabled" />
                 <small>&nbsp;</small>
                 <div class="grid">
                     <button :disabled="inputDisabled" :aria-busy="state.generating" @click="generateSecret">#6 Generate</button>

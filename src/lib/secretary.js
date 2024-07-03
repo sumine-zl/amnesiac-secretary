@@ -2,7 +2,6 @@
 
 import Util from './Util.js';
 
-const CIPHER_DATA_SIZE = 64;  // in bytes
 const UNIFORM_IV_SIZE = 12;  // in bytes
 const UNIFORM_SALT_SIZE = 16;  // in bytes
 const UNIFORM_KEY_LENGTH = 256;  // in bits
@@ -52,7 +51,7 @@ function isUnlocked() {
     return _cipher && _key && _salt;
 }
 
-async function unlock( passphrase, ciphertext = '' ) {
+async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
     reset();
     const Crypto = window.crypto.subtle;
     let plain = null;
@@ -65,17 +64,18 @@ async function unlock( passphrase, ciphertext = '' ) {
             );
             promise = Promise.resolve();
         } else {
+            let cipherSize = Math.ceil( bitLength / 8 );
             let buf = _genRand(
-                CIPHER_DATA_SIZE + UNIFORM_IV_SIZE + UNIFORM_SALT_SIZE
+                cipherSize + UNIFORM_IV_SIZE + UNIFORM_SALT_SIZE
             );
-            plain = buf.slice( 0, CIPHER_DATA_SIZE );
+            plain = buf.slice( 0, cipherSize );
             _iv = buf.slice(
-                CIPHER_DATA_SIZE,
-                CIPHER_DATA_SIZE + UNIFORM_IV_SIZE
+                cipherSize,
+                cipherSize + UNIFORM_IV_SIZE
             );
             _salt = buf.slice(
-                CIPHER_DATA_SIZE + UNIFORM_IV_SIZE,
-                CIPHER_DATA_SIZE + UNIFORM_IV_SIZE + UNIFORM_SALT_SIZE
+                cipherSize + UNIFORM_IV_SIZE,
+                cipherSize + UNIFORM_IV_SIZE + UNIFORM_SALT_SIZE
             );
         }
         return Crypto.digest('SHA-256', new Uint8Array(  // new Uint8array() for passing the goddamn tests
