@@ -131,20 +131,9 @@ async function confirmPassphrase() {
     state.unlocking = true;
     clearClipboard();
     let ciphertext = credential.ciphertext;
+    let payload = null;
     if ( ciphertext ) {
-        const [ section1, section2 ] = ciphertext.split('|');
-        ciphertext = section1;
-        if ( section2 ) {
-            const buf = await Util.decompress( Util.base64ToBuffer( section2 ));
-            const arr = JSON.parse( Util.bufferToString( buf ));
-            if ( ! Array.isArray( arr )) {
-                console.error('Invalid preferences data from the ciphertext');
-            } else {
-                arr.forEach(( v ) => {
-                    preferences.push( v );
-                });
-            }
-        }
+        [ ciphertext, payload ] = ciphertext.split('|');
     }
     const passphrase = credential.passphrase;
     credential.passphrase = '';
@@ -157,6 +146,19 @@ async function confirmPassphrase() {
         state.unlocked = true;
     } catch ( err ) {
         alert('Failed to process with the passphrase');  // no wait
+        state.unlocking = false;
+        return;
+    }
+    if ( payload ) {
+        const buf = await Util.decompress( Util.base64ToBuffer( payload ));
+        const arr = JSON.parse( Util.bufferToString( buf ));
+        if ( ! Array.isArray( arr )) {
+            console.error('Invalid preferences data from the ciphertext, discarded');
+        } else {
+            arr.forEach(( v ) => {
+                preferences.push( v );
+            });
+        }
     }
     state.unlocking = false;
 }
@@ -164,7 +166,7 @@ async function confirmPassphrase() {
 async function resetPassphrase() {
     const choice = await confirm('Are you sure want to reset all the data?');
     if ( choice === 'confirm') {
-        await Secretary.reset();
+        Secretary.reset();
         resetObject( output, defaultOutput );
         resetObject( input, defaultInput );
         resetObject( credential, defaultCredential );
@@ -269,8 +271,8 @@ async function exportAsBundle() {
             JSON.stringify( preferences )
         )
     );
-    const base64 = Util.bufferToBase64( buf );
-    output.exportedText = ciphertext + '|' + base64;
+    const payload = Util.bufferToBase64( buf );
+    output.exportedText = ciphertext + '|' + payload;
 }
 
 async function copyBundle() {

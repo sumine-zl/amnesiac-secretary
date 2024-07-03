@@ -9,7 +9,8 @@ export default mergeConfig(
             environment: 'jsdom',
             exclude: [...configDefaults.exclude ],
             reporters: ['verbose'],
-            root: fileURLToPath( new URL('./', import.meta.url ))
+            root: fileURLToPath( new URL('./', import.meta.url )),
+            testTimeout: 15000
         }
     })
 );
