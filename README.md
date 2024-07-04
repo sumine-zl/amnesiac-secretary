@@ -2,7 +2,7 @@
 
 A secreatary for amnesiacs.
 
-**This Extension Is For Personal Use Only**
+**This Project Is For Personal Use Only**
 
 **Bug Reports And Feature Proposals Are Not Guaranteed To Be Accepted**
 
