@@ -9,6 +9,9 @@ import { version as VERSION } from '../package.json';
 const INPUT_MAX_CIPHER_LENGTH = 4096;
 const INPUT_MAX_REVISION = 15;
 const INPUT_MAX_LENGTH = 32;
+const STRENGTH_VALUE_MAP = [
+    95, 94, 91, 64, 62, 36, 10
+];
 
 // Defaults
 const defaultState = {
@@ -27,6 +30,7 @@ const defaultInput = {
     user: '',
     revision: 0,
     length: 12,
+    strengthIndex: 2,
     newPass: ''
 };
 const defaultOutput ={
@@ -65,6 +69,22 @@ const features = computed(() => {
 // Disable the inputs except unlock section while under computing
 const inputDisabled = computed(() => {
     return !state.unlocked || state.generating;
+});
+// Strength value
+const strengthValue = computed(() => {
+    return STRENGTH_VALUE_MAP[ input.strengthIndex ];
+});
+// Strength description
+const strengthDesc = computed(() => {
+    return [
+        'Every printable characters on the keyboard, including Space (BE CAUTION)',
+        'Every printable characters on the keyboard, excluding Space',
+        'Most of the printable characters, excluding Space, Double/Single Quotes, Backslash',
+        'Same characters as Base64 codec (NOT FOR DECODE)',
+        'Numbers and alphabets with both upper and lower cases',
+        'Numbers and lower cased alphabets',
+        'Only numbers from 0 to 9 (NOT RECOMMENDED)'
+    ][ input.strengthIndex ];
 });
 
 // Dialogs
@@ -202,7 +222,8 @@ async function generateSecret() {
             input.service,
             input.user,
             input.revision,
-            input.length
+            input.length,
+            STRENGTH_VALUE_MAP[ input.strengthIndex ]
         );
     } catch ( err ) {
         await alert('Failed to generate secret');
@@ -222,6 +243,7 @@ async function generateSecret() {
         }
         preferences[i][2] = input.revision;
         preferences[i][3] = input.length;
+        preferences[i][4] = STRENGTH_VALUE_MAP[ input.strengthIndex ];
         return true;
     });
     if ( hit ) {
@@ -232,7 +254,8 @@ async function generateSecret() {
         input.service,
         input.user,
         input.revision,
-        input.length
+        input.length,
+        STRENGTH_VALUE_MAP[ input.strengthIndex ]
     ]);
     state.generating = false;
 }
@@ -309,6 +332,7 @@ function autofillForm() {
         input.user = v[1];
         input.revision = v[2];
         input.length = v[3];
+        input.strengthIndex = STRENGTH_VALUE_MAP.indexOf( v[4] );
         return true;
     });
 }
@@ -319,6 +343,7 @@ function applyPreference( index ) {
     input.user = preference[1];
     input.revision = preference[2];
     input.length = preference[3];
+    input.strengthIndex = STRENGTH_VALUE_MAP.indexOf( preference[4] );
 }
 
 function removePreference( index ) {
@@ -362,14 +387,16 @@ onMounted(() => {
         <section>
             <fieldset>
                 <label>#4 Service identity, case-sensitive:</label>
-                <input type="text" v-model.trim="input.service" :disabled="inputDisabled" placeholder="Domain Name / Software Title / etc." @input="autofillForm" />
+                <input type="text" v-model.trim="input.service" :disabled="inputDisabled" placeholder="Domain Name / Software Title / etc." @input="clearSecret(); autofillForm()" />
                 <label>#5 User identity, case-sensitive:</label>
-                <input type="text" v-model.trim="input.user" :disabled="inputDisabled" placeholder="Username / Email / etc." />
+                <input type="text" v-model.trim="input.user" :disabled="inputDisabled" placeholder="Username / Email / etc." @input="clearSecret" />
                 <label>Revision of the secret: <span>{{input.revision}}</span></label>
-                <input type="range" min="0" :max="INPUT_MAX_REVISION" v-model.number="input.revision" :disabled="inputDisabled" />
+                <input type="range" min="0" :max="INPUT_MAX_REVISION" v-model.number="input.revision" :disabled="inputDisabled" @input="clearSecret" />
                 <label>Length of the secret: <span>{{input.length}}</span></label>
-                <input type="range" min="8" :max="INPUT_MAX_LENGTH" v-model.number="input.length" :disabled="inputDisabled" />
-                <small>&nbsp;</small>
+                <input type="range" min="8" :max="INPUT_MAX_LENGTH" v-model.number="input.length" :disabled="inputDisabled" @input="clearSecret" />
+                <label>Strength of the secret: <span>{{strengthValue }} characters</span></label>
+                <input type="range" min="0" :max="STRENGTH_VALUE_MAP.length - 1" v-model.number="input.strengthIndex" :disabled="inputDisabled" @input="clearSecret" />
+                <small>{{strengthDesc}}</small>
                 <div class="grid">
                     <button :disabled="inputDisabled" :aria-busy="state.generating" @click="generateSecret">#6 Generate</button>
                     <button class="outline" :disabled="inputDisabled" @click="resetSecret">Reset</button>
@@ -414,6 +441,7 @@ onMounted(() => {
                         <th>User</th>
                         <th>Revision</th>
                         <th>Length</th>
+                        <th>Strength</th>
                         <th><a href="javascript:;" @click="removeAllPreferences">Remove All</a></th>
                     </tr>
                     <tr v-for="( v, i ) in preferences">
@@ -421,6 +449,7 @@ onMounted(() => {
                         <td><a href="javascript:;" @click="applyPreference(i)">{{ v[1] }}</a></td>
                         <td>{{ v[2] }}</td>
                         <td>{{ v[3] }}</td>
+                        <td>{{ v[4] }}</td>
                         <td><a href="javascript:;" @click="removePreference(i)">Remove</a></td>
                     </tr>
                 </table>
