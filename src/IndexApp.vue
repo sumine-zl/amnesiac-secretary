@@ -394,7 +394,7 @@ onMounted(() => {
                 <input type="range" min="0" :max="INPUT_MAX_REVISION" v-model.number="input.revision" :disabled="inputDisabled" @input="clearSecret" />
                 <label>Length of the secret: <span>{{input.length}}</span></label>
                 <input type="range" min="8" :max="INPUT_MAX_LENGTH" v-model.number="input.length" :disabled="inputDisabled" @input="clearSecret" />
-                <label>Strength of the secret: <span>{{strengthValue }} characters</span></label>
+                <label>Strength of the secret: <span>{{strengthValue }}</span></label>
                 <input type="range" min="0" :max="STRENGTH_VALUE_MAP.length - 1" v-model.number="input.strengthIndex" :disabled="inputDisabled" @input="clearSecret" />
                 <small>{{strengthDesc}}</small>
                 <div class="grid">
