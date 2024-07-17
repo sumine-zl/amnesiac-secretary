@@ -64,7 +64,15 @@ function _translate( buf, sequences ) {
         }
         return true;  // continue
     });
-    const string = indices.map(( c ) => {
+    const string = indices.map(( c, i, a ) => {
+        if ( c === a[ i - 1 ]) {
+            c += 1;
+        }
+        if ( c >= sequence.length ) {
+            c = 0;
+        }
+        return c;
+    }).map(( c ) => {
         return sequence[c];
     }).join('');
     return string;
