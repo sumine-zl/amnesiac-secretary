@@ -7,6 +7,12 @@ const UNIFORM_SALT_SIZE = 16;  // in bytes
 const UNIFORM_KEY_LENGTH = 256;  // in bits
 const UNIFORM_KEY_SIZE = UNIFORM_KEY_LENGTH / 8;  // in bytes
 const BASE_ITERATION = 1048320;  // in times
+const CHARSET_NUMBER = "0123456789";
+const CHARSET_ALPHABET_L = "abcdefghijklmnopqrstuvwxyz";
+const CHARSET_ALPHABET_U = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const CHARSET_SPECIAL_33 = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ ";
+const CHARSET_SPECIAL_32 = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+const CHARSET_SPECIAL_29 = "!#$%&()*+,-./:;<=>?@[]^_`{|}~";
 
 let _cipher = null;
 let _iv = null;
@@ -19,6 +25,49 @@ function _genRand( size ) {
 
 function _getSpice( buf ) {
     return ( new Uint8Array( buf )).reduce(( a, b ) =>  a ^ b, 0 );
+}
+
+function _translate( buf, sequences ) {
+    const splits = sequences.reduce(( r, _, i ) => {
+        if ( i === 0 ) {
+            r.push( 0 );
+            return r;
+        }
+        r.push( r[ i - 1 ] + sequences[ i - 1 ].length );
+        return r;
+    }, []);
+    const buckets = sequences.map(() => { return []; });
+    const sequence = sequences.join('');
+    const indices = ( new Uint8Array( buf )).reduce(( r, v, i ) => {
+        let c = v % sequence.length;
+        for ( let j = splits.length - 1; j >= 0; j-- ) {
+            if ( c >= splits[j] ) {
+                buckets[j].push([ i, c ]);
+                break;
+            }
+        }
+        r.push( c );
+        return r;
+    }, []);
+    const bucket = buckets.reduce(( r, v ) => {
+        return ( r && ( v.length <= r.length ) ? r : v );
+    });
+    buckets.every(( v, j ) => {
+        if ( v.length === 0 ) {
+            if ( bucket.length === 0 ) {
+                return false;  // abort
+            }
+            let [ i, c ] = bucket.pop();
+            c = c % sequences[j].length + splits[j];
+            indices[i] = c;
+            v.push( c );
+        }
+        return true;  // continue
+    });
+    const string = indices.map(( c ) => {
+        return sequence[c];
+    }).join('');
+    return string;
 }
 
 async function testEnvironment() {
@@ -134,7 +183,6 @@ async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
  * 95 - ASCII chars from 32 to 126, including Space
  * 94 - ASCII chars from 33 to 126, excluding Space
  * 91 - ASCII chars from 33 to 126, excluding Space, Double/Single Quotes, Backslash
- * 64 - Base64 character set
  * 62 - Alphanumerics, with both upper and lower cases
  * 36 - Alphanumerics, with only lower cases
  * 10 - Numbers from 0 to 9
@@ -214,54 +262,48 @@ async function generate(
     }).then(( v ) => {  // generated secret
         // Unidirectional information tranlation
         switch ( strength ) {
-        // 10 - Only numbers from 0 to 9
+        // 10 - Numbers from 0 to 9
         case 10:
-            return String.fromCharCode( ...( new Uint8Array( v )).map(( b ) => {
-                return ( b % 10 ) + 48;
-            }));
-        // 36 - Numbers and lower cased alphabets
+            return _translate( v, [
+                CHARSET_NUMBER
+            ]);
+        // 36 - Alphanumerics, with only lower cases
         case 36:
-            return String.fromCharCode( ...( new Uint8Array( v )).map(( b ) => {
-                let char = ( b % 36 ) + 48;
-                if ( char > 57 ) { char += 39; }
-                return char;
-            }));
-        // 62 - Numbers and alphabets with both upper and lower cases
+            return _translate( v, [
+                CHARSET_NUMBER,
+                CHARSET_ALPHABET_L
+            ]);
+        // 62 - Alphanumerics, with both upper and lower cases
         case 62:
-            return String.fromCharCode( ...( new Uint8Array( v )).map(( b ) => {
-                let char = ( b % 62 ) + 48;
-                if ( char > 57 ) { char += 7; }
-                if ( char > 90 ) { char += 6; }
-                return char;
-            }));
-        // 64 - Same chars as Base64 encoding
-        case 64:
-            return String.fromCharCode( ...( new Uint8Array( v )).map(( b ) => {
-                let char = ( b % 64 ) + 43;
-                if ( char > 43 ) { char += 3; }
-                if ( char > 57 ) { char += 7; }
-                if ( char > 90 ) { char += 6; }
-                return char;
-            }));
+            return _translate( v, [
+                CHARSET_NUMBER,
+                CHARSET_ALPHABET_L,
+                CHARSET_ALPHABET_U
+            ]);
         // 91 - ASCII chars from 33 to 126, excluding Space, Double/Single Quotes, Backslash
         case 91:
-            return String.fromCharCode( ...( new Uint8Array( v )).map(( b ) => {
-                let char = ( b % 91 ) + 33;
-                if ( char >= 34 ) { char += 1 };  // skip "
-                if ( char >= 39 ) { char += 1 };  // skip '
-                if ( char >= 92 ) { char += 1 };  // skip \
-                return char;
-            }));
+            return _translate( v, [
+                CHARSET_NUMBER,
+                CHARSET_ALPHABET_L,
+                CHARSET_ALPHABET_U,
+                CHARSET_SPECIAL_29
+            ]);
         // 94 - ASCII chars from 33 to 126, excluding Space
         case 94:
-            return String.fromCharCode( ...( new Uint8Array( v )).map(( b ) => {
-                return ( b % 94 ) + 33;
-            }));
+            return _translate( v, [
+                CHARSET_NUMBER,
+                CHARSET_ALPHABET_L,
+                CHARSET_ALPHABET_U,
+                CHARSET_SPECIAL_32
+            ]);
         // 95 - ASCII chars from 32 to 126, including Space
         case 95:
-            return String.fromCharCode( ...( new Uint8Array( v )).map(( b ) => {
-                return ( b % 95 ) + 32;
-            }));
+            return _translate( v, [
+                CHARSET_NUMBER,
+                CHARSET_ALPHABET_L,
+                CHARSET_ALPHABET_U,
+                CHARSET_SPECIAL_33
+            ]);
         default:
             throw new Error(`Invalid strength value: ${strength}`);
         }
