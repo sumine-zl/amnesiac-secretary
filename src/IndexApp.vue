@@ -30,7 +30,7 @@ const defaultInput = {
     user: '',
     revision: 0,
     length: 12,
-    strengthIndex: 2,
+    strengthIndex: STRENGTH_VALUE_MAP.indexOf( 91 ),
     newPass: ''
 };
 const defaultOutput ={
@@ -444,11 +444,11 @@ onMounted(() => {
                         <th><a href="javascript:;" @click="removeAllPreferences">Remove All</a></th>
                     </tr>
                     <tr v-for="( v, i ) in preferences">
-                        <td><a href="javascript:;" @click="applyPreference(i)">{{ v[0] }}</a></td>
-                        <td><a href="javascript:;" @click="applyPreference(i)">{{ v[1] }}</a></td>
-                        <td>{{ v[2] }}</td>
-                        <td>{{ v[3] }}</td>
-                        <td>{{ v[4] }}</td>
+                        <td><a href="javascript:;" @click="applyPreference(i)">{{v[0]}}</a></td>
+                        <td><a href="javascript:;" @click="applyPreference(i)">{{v[1]}}</a></td>
+                        <td>{{v[2]}}</td>
+                        <td>{{v[3]}}</td>
+                        <td>{{v[4]}}</td>
                         <td><a href="javascript:;" @click="removePreference(i)">Remove</a></td>
                     </tr>
                 </table>
