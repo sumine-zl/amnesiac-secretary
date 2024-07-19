@@ -10,7 +10,7 @@ const INPUT_MAX_CIPHER_LENGTH = 4096;
 const INPUT_MAX_REVISION = 15;
 const INPUT_MAX_LENGTH = 32;
 const STRENGTH_VALUE_MAP = [
-    95, 94, 91, 62, 36, 10
+    10, 36, 62, 91, 94, 95
 ];
 
 // Defaults
@@ -77,12 +77,12 @@ const strengthValue = computed(() => {
 // Strength description
 const strengthDesc = computed(() => {
     return [
-        'Every printable characters on the keyboard, including Space (BE CAUTION)',
-        'Every printable characters on the keyboard, excluding Space',
-        'Most of the printable characters, excluding Space, Double/Single Quotes, Backslash',
-        'Numbers and alphabets with both upper and lower cases',
-        'Numbers and lower cased alphabets',
-        'Only numbers from 0 to 9 (NOT RECOMMENDED)'
+        'Only numbers from 0 to 9 (NOT RECOMMENDED)',
+        'Numbers and lowercased alphabets',
+        'Numbers, alphabets with both upper and lower cases',
+        'Numbers, alphabets with all cases, special characters excluding Space, Double/Single Quotes, Backslash',
+        'Numbers, alphabets with all cases, special characters excluding Space',
+        'Numbers, alphabets with all cases, special characters including Space (BE CAUTION)'
     ][ input.strengthIndex ];
 });
 
@@ -374,7 +374,7 @@ onMounted(() => {
                 <label>#0 Or choose a bit length for the new cipher: <span>{{chosenBitLength}}</span></label>
                 <input type="range" min="256" :max="INPUT_MAX_CIPHER_LENGTH" step="256" v-model.number="credential.cipherLength" :disabled="state.unlocked || credential.ciphertext.length > 0" />
                 <label>#2 Enter the passphrase for the ciphertext:</label>
-                <input type="password" v-model="credential.passphrase" required :disabled="state.unlocked" :placeholder="(credential.ciphertext ? 'The passphrase of the ciphertext above' : 'Use a memorable passphrase for the new ciphertext')" />
+                <input type="password" v-model="credential.passphrase" required :disabled="state.unlocked" :placeholder="(credential.ciphertext ? 'The passphrase of the ciphertext above' : 'Use a memorable passphrase for the new cipher')" />
                 <small>Do not save this passphrase in any place other than your brain, you only need to remember this one</small>
                 <div class="grid">
                     <button :disabled="state.unlocked" :aria-busy="state.unlocking" aria-label="Unlocking..." @click="confirmPassphrase">{{(state.unlocked ? 'Unlocked' : '#3 Confirm')}}</button>
