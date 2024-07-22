@@ -3,7 +3,10 @@ import { computed, onMounted, reactive } from 'vue';
 import Util from './lib/Util.js';
 import Secretary from './lib/Secretary.js';
 import Dialog from './lib/Dialog.vue';
-import { version as VERSION } from '../package.json';
+import {  version as VERSION } from '../package.json';
+
+// Constants
+const APPLICATION_NAME = 'Amnesiac Secretary';
 
 // Configs
 const INPUT_MAX_CIPHER_LENGTH = 4096;
@@ -357,7 +360,7 @@ async function removeAllPreferences() {
 }
 
 onMounted(() => {
-    // Nothing
+    document.title = `${APPLICATION_NAME} v${VERSION}`;
 });
 </script>
 
@@ -424,7 +427,7 @@ onMounted(() => {
                 <small>NOTICE: Be sure to save the ciphertext in a safe place</small>
                 <div class="grid">
                     <button :disabled="inputDisabled" @click="exportCiphertext">Export Ciphertext</button>
-                    <button :disabled="inputDisabled" @click="exportAsBundle">#8 Export As Bundle</button>
+                    <button :disabled="inputDisabled" @click="exportAsBundle">#8 Export All</button>
                     <button class="outline" :disabled="inputDisabled || !output.exportedText" @click="copyBundle">Copy</button>
                     <button class="outline" :disabled="inputDisabled" @click="clearBundle">Clear</button>
                 </div>
