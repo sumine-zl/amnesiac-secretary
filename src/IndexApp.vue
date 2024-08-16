@@ -401,7 +401,7 @@ onMounted(() => {
                 <small>{{strengthDesc}}</small>
                 <div class="grid">
                     <button :disabled="inputDisabled" :aria-busy="state.generating" @click="generateSecret">#6 Generate</button>
-                    <button class="outline" :disabled="inputDisabled" @click="resetSecret">Reset</button>
+                    <button class="outline" :disabled="inputDisabled" @click="resetSecret">#9 Reset</button>
                 </div>
             </fieldset>
         </section>
