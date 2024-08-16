@@ -381,7 +381,7 @@ onMounted(() => {
                 <small>Do not save this passphrase in any place other than your brain, you only need to remember this one</small>
                 <div class="grid">
                     <button :disabled="state.unlocked" :aria-busy="state.unlocking" aria-label="Unlocking..." @click="confirmPassphrase">{{(state.unlocked ? 'Unlocked' : '#3 Confirm')}}</button>
-                    <button class="outline" :disabled="state.unlocking" @click="resetPassphrase">Reset</button>
+                    <button class="outline" :disabled="state.unlocking" @click="resetPassphrase">#9 Reset</button>
                 </div>
             </fieldset>
         </section>
@@ -401,7 +401,7 @@ onMounted(() => {
                 <small>{{strengthDesc}}</small>
                 <div class="grid">
                     <button :disabled="inputDisabled" :aria-busy="state.generating" @click="generateSecret">#6 Generate</button>
-                    <button class="outline" :disabled="inputDisabled" @click="resetSecret">#9 Reset</button>
+                    <button class="outline" :disabled="inputDisabled" @click="resetSecret">Reset</button>
                 </div>
             </fieldset>
         </section>
