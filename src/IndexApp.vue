@@ -423,7 +423,7 @@ onMounted(() => {
                 <label>New Passphrase:</label>
                 <input type="password" v-model="input.newPass" :disabled="inputDisabled" placeholder="Leave this empty if you want to keep current passphrase unchanged" />
                 <label>Export ciphertext:</label>
-                <textarea v-model="output.exportedText" readonly :disabled="inputDisabled" placeholder="Choose either [Export Ciphertext] to export only the ciphertext or [Export Bundle] to generate a bundle of ciphertext along with all the preferences"></textarea>
+                <textarea v-model="output.exportedText" readonly :disabled="inputDisabled" placeholder="Choose either [Export Ciphertext] to export only the ciphertext or [Export All] to generate a bundle of ciphertext along with all the preferences"></textarea>
                 <small>NOTICE: Be sure to save the ciphertext in a safe place</small>
                 <div class="grid">
                     <button :disabled="inputDisabled" @click="exportCiphertext">Export Ciphertext</button>
