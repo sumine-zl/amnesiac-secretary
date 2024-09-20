@@ -377,7 +377,7 @@ onMounted(() => {
                 <label>#0 Or choose a bit length for the new cipher: <span>{{chosenBitLength}}</span></label>
                 <input type="range" min="256" :max="INPUT_MAX_CIPHER_LENGTH" step="256" v-model.number="credential.cipherLength" :disabled="state.unlocked || credential.ciphertext.length > 0" />
                 <label>#2 Enter the passphrase for the ciphertext:</label>
-                <input type="password" v-model="credential.passphrase" required :disabled="state.unlocked" :placeholder="(credential.ciphertext ? 'The passphrase of the ciphertext above' : 'Use a memorable passphrase for the new cipher')" />
+                <input type="password" v-model="credential.passphrase" required :disabled="state.unlocked" :placeholder="(credential.ciphertext ? 'The passphrase of the ciphertext above' : 'Use a memorable passphrase for the new cipher')" @keyup.enter="confirmPassphrase" />
                 <small>Do not save this passphrase in any place other than your brain, you only need to remember this one</small>
                 <div class="grid">
                     <button :disabled="state.unlocked" :aria-busy="state.unlocking" aria-label="Unlocking..." @click="confirmPassphrase">{{(state.unlocked ? 'Unlocked' : '#3 Confirm')}}</button>
