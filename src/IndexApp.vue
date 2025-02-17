@@ -460,7 +460,7 @@ onMounted(() => {
     </article>
     <hr class="separator" />
     <section>
-        <small class="footnote">Copyright &copy; 2024 Sumine_ZL</small>
+        <small class="footnote">Copyright &copy; 2024-2025 Sumine ZL</small>
         <small class="footnote right">Amnesiac Secretary v{{VERSION}} (<a target="_blank" href="https://github.com/sumine-zl/amnesiac-secretary">Source Code</a>)</small>
     </section>
 </main>
