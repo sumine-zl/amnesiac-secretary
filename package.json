@@ -17,7 +17,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@picocss/pico": "^2.0.6",
+    "@picocss/pico": "^2.1.1",
     "vite-plugin-html": "^3.2.2",
     "vite-plugin-singlefile": "^2.0.3",
     "vue": "^3.4.29"
@@ -25,9 +25,9 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/test-utils": "^2.4.6",
-    "jsdom": "^24.1.3",
-    "vite": "^5.4.11",
+    "jsdom": "^26.0.0",
+    "vite": "^6.2.2",
     "vite-plugin-vue-devtools": "^7.6.7",
-    "vitest": "^1.6.1"
+    "vitest": "^3.0.8"
   }
 }
