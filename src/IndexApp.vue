@@ -21,7 +21,9 @@ const defaultState = {
     unlocked: false,
     unlocking: false,
     generating: false,
-    showSecret: false
+    showSecret: false,
+    sortIndex: -1,
+    sortDescend: false, // true for ascending
 };
 const defaultCredential = {
     cipherLength: 1024,
@@ -36,7 +38,7 @@ const defaultInput = {
     strengthIndex: STRENGTH_VALUE_MAP.indexOf( 91 ),
     newPass: ''
 };
-const defaultOutput ={
+const defaultOutput = {
     secret: '',
     exportedText: ''
 };
@@ -52,6 +54,9 @@ const input = reactive( Object.assign({}, defaultInput ));
 
 // Outputs
 const output = reactive( Object.assign({}, defaultOutput ));
+
+// Sorters
+const sorters = reactive(['', '', '', '', '']);
 
 // List of preferences
 const preferences = reactive([]);
@@ -87,6 +92,22 @@ const strengthDesc = computed(() => {
         'Numbers, alphabets with all cases, special characters excluding Space',
         'Numbers, alphabets with all cases, special characters including Space (BE CAUTION)'
     ][ input.strengthIndex ];
+});
+// Data table
+const preferenceData = computed(() => {
+    let data = preferences.slice( 0 );
+    if ( state.sortIndex === -1 ) {
+        return data;
+    }
+    if ( state.sortDescend ) {
+        return data.sort(( a, b ) => {
+            return a[ state.sortIndex ].localeCompare( b[ state.sortIndex ])
+        });
+    } else {
+        return data.sort(( a, b ) => {
+            return b[ state.sortIndex ].localeCompare( a[ state.sortIndex ])
+        });
+    }
 });
 
 // Dialogs
@@ -359,6 +380,18 @@ async function removeAllPreferences() {
     }
 }
 
+function sortColumn( index ) {
+    if ( state.sortIndex === index ) {
+        state.sortDescend = ! state.sortDescend;
+    } else {
+        state.sortIndex = index;
+    }
+    sorters.forEach(( v, i ) => {
+        sorters[i] = '';
+    });
+    sorters[ index ] = ( state.sortDescend ? '↑' : '↓' );
+}
+
 onMounted(() => {
     document.title = `${APPLICATION_NAME} v${VERSION}`;
 });
@@ -389,14 +422,14 @@ onMounted(() => {
         <section>
             <fieldset>
                 <label>#4 Service identity, case-sensitive:</label>
-                <input type="text" v-model.trim="input.service" :disabled="inputDisabled" placeholder="Domain Name / Software Title / etc." @input="clearSecret(); autofillForm()" />
+                <input type="text" v-model.trim="input.service" :disabled="inputDisabled" placeholder="Domain Name / Software Title / etc." @input="clearSecret();autofillForm()" />
                 <label>#5 User identity, case-sensitive:</label>
                 <input type="text" v-model.trim="input.user" :disabled="inputDisabled" placeholder="Username / Email / etc." @input="clearSecret" />
                 <label>Revision of the secret: <span>{{input.revision}}</span></label>
                 <input type="range" min="0" :max="INPUT_MAX_REVISION" v-model.number="input.revision" :disabled="inputDisabled" @input="clearSecret" />
                 <label>Length of the secret: <span>{{input.length}}</span></label>
                 <input type="range" min="8" :max="INPUT_MAX_LENGTH" v-model.number="input.length" :disabled="inputDisabled" @input="clearSecret" />
-                <label>Strength of the secret: <span>{{strengthValue }}</span></label>
+                <label>Strength of the secret: <span>{{strengthValue}}</span></label>
                 <input type="range" min="0" :max="STRENGTH_VALUE_MAP.length - 1" v-model.number="input.strengthIndex" :disabled="inputDisabled" @input="clearSecret" />
                 <small>{{strengthDesc}}</small>
                 <div class="grid">
@@ -438,22 +471,26 @@ onMounted(() => {
             <fieldset>
                 <label>Manage preferences:</label>
                 <table>
-                    <tr>
-                        <th>Service</th>
-                        <th>User</th>
-                        <th>Revision</th>
-                        <th>Length</th>
-                        <th>Strength</th>
-                        <th><a href="javascript:;" @click="removeAllPreferences">Remove All</a></th>
-                    </tr>
-                    <tr v-for="( v, i ) in preferences">
-                        <td><a href="javascript:;" @click="applyPreference(i)">{{v[0]}}</a></td>
-                        <td><a href="javascript:;" @click="applyPreference(i)">{{v[1]}}</a></td>
-                        <td>{{v[2]}}</td>
-                        <td>{{v[3]}}</td>
-                        <td>{{v[4]}}</td>
-                        <td><a href="javascript:;" @click="removePreference(i)">Remove</a></td>
-                    </tr>
+                    <thead>
+                        <tr>
+                            <th><a class="sort" href="javascript:;" @click="sortColumn(0)">Service {{sorters[0]}}</a></th>
+                            <th><a href="javascript:;" @click="sortColumn(1)">User {{sorters[1]}}</a></th>
+                            <th>Revision</th>
+                            <th>Length</th>
+                            <th>Strength</th>
+                            <th><a href="javascript:;" @click="removeAllPreferences">Remove All</a></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="( v, i ) in preferenceData">
+                            <td><a href="javascript:;" @click="applyPreference(i)">{{v[0]}}</a></td>
+                            <td><a href="javascript:;" @click="applyPreference(i)">{{v[1]}}</a></td>
+                            <td>{{v[2]}}</td>
+                            <td>{{v[3]}}</td>
+                            <td>{{v[4]}}</td>
+                            <td><a href="javascript:;" @click="removePreference(i)">Remove</a></td>
+                        </tr>
+                    </tbody>
                 </table>
             </fieldset>
         </section>
@@ -482,4 +519,13 @@ onMounted(() => {
 </template>
 
 <style scoped>
+table {
+    font-size: 0.9em;
+}
+table a {
+    text-decoration: none;
+}
+table a:hover {
+    text-decoration: underline;
+}
 </style>
