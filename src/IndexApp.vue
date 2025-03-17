@@ -7,6 +7,7 @@ import {  version as VERSION } from '../package.json';
 
 // Constants
 const APPLICATION_NAME = 'Amnesiac Secretary';
+const HOSTNAME = window.location.hostname;
 
 // Configs
 const INPUT_MAX_CIPHER_LENGTH = 4096;
@@ -405,6 +406,9 @@ onMounted(() => {
 <div v-else-if="!features.compress">Your browser does not support CompressionStream, try with another one</div>
 <main class="container" v-else>
     <br />
+    <article style="background-color:gold;font-size:0.8em;" v-show="HOSTNAME === 'sumine-zl.github.io'">
+        <span>This site is for testing only. For your security, please build and run the app by yourself</span>
+    </article>
     <article>
         <section>
             <fieldset>
