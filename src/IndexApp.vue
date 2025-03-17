@@ -369,8 +369,11 @@ function applyPreference( index ) {
     input.strengthIndex = STRENGTH_VALUE_MAP.indexOf( preference[4] );
 }
 
-function removePreference( index ) {
-    preferences.splice( index, 1 );
+async function removePreference( index, service, user ) {
+    const choice = await confirm(`Are you sure want to remove preference [${user}] at [${service}]?`);
+    if ( choice === 'confirm') {
+        preferences.splice( index, 1 );
+    }
 }
 
 async function removeAllPreferences() {
@@ -488,7 +491,7 @@ onMounted(() => {
                             <td>{{v[2]}}</td>
                             <td>{{v[3]}}</td>
                             <td>{{v[4]}}</td>
-                            <td><a href="javascript:;" @click="removePreference(i)">Remove</a></td>
+                            <td><a href="javascript:;" @click="removePreference(i,v[0],v[1])">Remove</a></td>
                         </tr>
                     </tbody>
                 </table>
