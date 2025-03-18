@@ -7,6 +7,7 @@ import {  version as VERSION } from '../package.json';
 
 // Constants
 const APPLICATION_NAME = 'Amnesiac Secretary';
+const SOURCE_REPO = 'https://github.com/sumine-zl/amnesiac-secretary';
 const HOSTNAME = window.location.hostname;
 
 // Configs
@@ -407,7 +408,7 @@ onMounted(() => {
 <main class="container" v-else>
     <br />
     <article style="background-color:gold;font-size:0.8em;" v-show="HOSTNAME === 'sumine-zl.github.io'">
-        <span>This site is for testing only. For your security, please build and run the app by yourself</span>
+        <span>This page is for demonstration only. For security, please build from the <a target="_blank" href="{{SOURCE_REPO}}">source repo</a> and run it by yourself.</span>
     </article>
     <article>
         <section>
@@ -418,7 +419,7 @@ onMounted(() => {
                 <input type="range" min="256" :max="INPUT_MAX_CIPHER_LENGTH" step="256" v-model.number="credential.cipherLength" :disabled="state.unlocked || credential.ciphertext.length > 0" />
                 <label>#2 Enter the passphrase for the ciphertext:</label>
                 <input type="password" v-model="credential.passphrase" required :disabled="state.unlocked" :placeholder="(credential.ciphertext ? 'The passphrase of the ciphertext above' : 'Use a memorable passphrase for the new cipher')" @keyup.enter="confirmPassphrase" />
-                <small>Do not save this passphrase in any place other than your brain, you only need to remember this one</small>
+                <small>Do not save this passphrase in any place other than in your brain, you only need to remember this one</small>
                 <div class="grid">
                     <button :disabled="state.unlocked" :aria-busy="state.unlocking" aria-label="Unlocking..." @click="confirmPassphrase">{{(state.unlocked ? 'Unlocked' : '#3 Confirm')}}</button>
                     <button class="outline" :disabled="state.unlocking" @click="resetPassphrase">#9 Reset</button>
@@ -476,7 +477,7 @@ onMounted(() => {
         <hr class="separator" />
         <section>
             <fieldset>
-                <label>Manage preferences:</label>
+                <label>Latest preferences:</label>
                 <table>
                     <thead>
                         <tr>
@@ -505,7 +506,7 @@ onMounted(() => {
     <hr class="separator" />
     <section>
         <small class="footnote">Copyright &copy; 2024-2025 Sumine ZL</small>
-        <small class="footnote right">Amnesiac Secretary v{{VERSION}} (<a target="_blank" href="https://github.com/sumine-zl/amnesiac-secretary">Source Code</a>)</small>
+        <small class="footnote right">Amnesiac Secretary v{{VERSION}} (<a target="_blank" href="{{SOURCE_REPO}}">Source Code</a>)</small>
     </section>
 </main>
 <Dialog :open="alertDialog.show" :title="'ALERT'" :message="alertDialog.message" @close="dialogClosed('close')"></Dialog>
@@ -517,7 +518,7 @@ onMounted(() => {
 <Dialog :open="secretDialog.show" :title="'CAUTION'" @close="secretDialog.show=false;state.showSecret=false">
     <template #content>
         <input :type="(state.showSecret ? 'text' : 'password')" v-model="output.secret" readonly />
-        <p>Make sure there is no body else at you back!</p>
+        <p>Make sure there are no body else at you back!</p>
     </template>
     <template #control>
         <button v-show="!state.showSecret" class="danger" @click="state.showSecret = !state.showSecret">Show the secret</button>
