@@ -2,7 +2,7 @@
   "private": true,
   "name": "amnesiac-secretary",
   "description": "A secretary for amnesiacs",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "author": "Sumine ZL",
   "license": "MIT",
   "repository": {
