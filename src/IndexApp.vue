@@ -128,14 +128,16 @@ const secretDialog = reactive({
 // Dialog promise resolve
 let dialogResolve = null;
 
-function hideAllDialogs() {
+/* Dialog Control *************************************************************/
+
+function _hideAllDialogs() {
     alertDialog.show = false;
     confirmDialog.show = false;
     secretDialog.show = false;
 }
 
 async function alert( msg ) {
-    hideAllDialogs();
+    _hideAllDialogs();
     alertDialog.message = msg;
     alertDialog.show = true;
     return new Promise(( resolve ) => {
@@ -144,7 +146,7 @@ async function alert( msg ) {
 }
 
 async function confirm( msg ) {
-    hideAllDialogs();
+    _hideAllDialogs();
     confirmDialog.message = msg;
     confirmDialog.show = true;
     return new Promise(( resolve ) => {
@@ -153,19 +155,23 @@ async function confirm( msg ) {
 }
 
 function dialogClosed( type ) {
-    hideAllDialogs();
+    _hideAllDialogs();
     dialogResolve( type );
 }
 
-function resetArray( array ) {
+/* Data Reset *****************************************************************/
+
+function _resetArray( array ) {
     array.splice( 0, array.length );
 }
 
-function resetObject( target, source ) {
+function _resetObject( target, source ) {
     for ( const key in source ) {
         target[ key ] = source[ key ];
     }
 }
+
+/* Clipboard Access ***********************************************************/
 
 function copyToClipboard( text ) {
     navigator.clipboard.writeText( text );
@@ -174,6 +180,8 @@ function copyToClipboard( text ) {
 function clearClipboard() {
     navigator.clipboard.writeText('');
 }
+
+/* Section: Unlock ************************************************************/
 
 async function confirmPassphrase() {
     if ( credential.passphrase.length < 8 ) {
@@ -224,13 +232,15 @@ async function resetPassphrase() {
     const choice = await confirm('Are you sure want to reset all the data?');
     if ( choice === 'confirm') {
         Secretary.reset();
-        resetObject( output, defaultOutput );
-        resetObject( input, defaultInput );
-        resetObject( credential, defaultCredential );
-        resetObject( state, defaultState );
-        resetArray( preferences );
+        _resetObject( output, defaultOutput );
+        _resetObject( input, defaultInput );
+        _resetObject( credential, defaultCredential );
+        _resetObject( state, defaultState );
+        _resetArray( preferences );
     }
 }
+
+/* Section: Secret ************************************************************/
 
 async function generateSecret() {
     if ( ! input.service ) {
@@ -286,20 +296,38 @@ async function generateSecret() {
 }
 
 function resetSecret() {
-    resetObject( output, defaultOutput );
-    resetObject( input, defaultInput );
+    _resetObject( output, defaultOutput );
+    _resetObject( input, defaultInput );
 }
 
 async function copySecret() {
     navigator.clipboard.writeText( output.secret );
-    resetObject( output, defaultOutput );
+    _resetObject( output, defaultOutput );
     await alert('The generated secret is copied to the clipboard (Closing this dialog will clear the clipboard)');
     clearClipboard();
 }
 
 function clearSecret() {
-    resetObject( output, defaultOutput );
+    _resetObject( output, defaultOutput );
 }
+
+function autofillForm() {
+    if ( input.user ) {
+        return;
+    }
+    preferences.some(( v ) => {
+        if ( v[0] !== input.service ) {
+            return false;
+        }
+        input.user = v[1];
+        input.revision = v[2];
+        input.length = v[3];
+        input.strengthIndex = STRENGTH_VALUE_MAP.indexOf( v[4] );
+        return true;
+    });
+}
+
+/* Section: Export ************************************************************/
 
 async function exportCiphertext() {
     if ( input.newPass && input.newPass.length < 8 ) {
@@ -337,30 +365,16 @@ async function exportAsBundle() {
 
 async function copyBundle() {
     copyToClipboard( output.exportedText );
-    resetObject( output, defaultOutput );
+    _resetObject( output, defaultOutput );
     await alert('The exported bundle/cipertext is copied to the clipboard (Closing this dialog will clear the clipboard)');
     clearClipboard();
 }
 
 function clearBundle() {
-    resetObject( output, defaultOutput );
+    _resetObject( output, defaultOutput );
 }
 
-function autofillForm() {
-    if ( input.user ) {
-        return;
-    }
-    preferences.some(( v ) => {
-        if ( v[0] !== input.service ) {
-            return false;
-        }
-        input.user = v[1];
-        input.revision = v[2];
-        input.length = v[3];
-        input.strengthIndex = STRENGTH_VALUE_MAP.indexOf( v[4] );
-        return true;
-    });
-}
+/* Section: Latest Preferences ************************************************/
 
 function applyPreference( index ) {
     const preference = preferences[ index ];
@@ -381,7 +395,7 @@ async function removePreference( index, service, user ) {
 async function removeAllPreferences() {
     const choice = await confirm('Are you sure want to remove all the preferences?');
     if ( choice === 'confirm') {
-        resetArray( preferences );
+        _resetArray( preferences );
     }
 }
 
