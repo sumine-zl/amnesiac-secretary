@@ -24,8 +24,8 @@ const defaultState = {
     unlocking: false,
     generating: false,
     showSecret: false,
-    sortIndex: -1,
-    sortDescend: false, // true for ascending
+    sortIndex: -1,  // -1 for no sorting
+    sortDescend: false, // false for ascending
 };
 const defaultCredential = {
     cipherLength: 1024,
@@ -103,11 +103,11 @@ const preferenceData = computed(() => {
     }
     if ( state.sortDescend ) {
         return data.sort(( a, b ) => {
-            return a[ state.sortIndex ].localeCompare( b[ state.sortIndex ])
+            return b[ state.sortIndex ].localeCompare( a[ state.sortIndex ])
         });
     } else {
         return data.sort(( a, b ) => {
-            return b[ state.sortIndex ].localeCompare( a[ state.sortIndex ])
+            return a[ state.sortIndex ].localeCompare( b[ state.sortIndex ])
         });
     }
 });
@@ -265,6 +265,7 @@ async function generateSecret() {
         state.generating = false;
         return;
     }
+    // Overwrite existing item if any
     let offset = 0;
     let hit = preferences.some(( v, i ) => {
         if ( v[0] !== input.service ) {
@@ -285,6 +286,7 @@ async function generateSecret() {
         state.generating = false;
         return;
     }
+    // Insert to the beginning of the array
     preferences.splice( offset, 0, [
         input.service,
         input.user,
@@ -315,6 +317,7 @@ function autofillForm() {
     if ( input.user ) {
         return;
     }
+    // Search from the beginning of te array
     preferences.some(( v ) => {
         if ( v[0] !== input.service ) {
             return false;
@@ -376,7 +379,34 @@ function clearBundle() {
 
 /* Section: Latest Preferences ************************************************/
 
-function applyPreference( index ) {
+// Return the index of the item in `preferences`
+function _queryPreference( service, user ) {
+    let index = -1;
+    preferences.some(( v, i ) => {
+        if ( v[0] === service && v[1] === user ) {
+            index = i;
+            return true;
+        }
+        return false;
+    });
+    return index;
+}
+
+function sortColumn( index ) {
+    if ( state.sortIndex === index ) {
+        state.sortDescend = ! state.sortDescend;
+    } else {
+        state.sortIndex = index;
+        state.sortDescend = false;
+    }
+    sorters.forEach(( v, i ) => {
+        sorters[i] = '';
+    });
+    sorters[ index ] = ( state.sortDescend ? '↑' : '↓' );
+}
+
+function applyPreference( service, user ) {
+    const index = _queryPreference( service, user );
     const preference = preferences[ index ];
     input.service = preference[0];
     input.user = preference[1];
@@ -385,9 +415,10 @@ function applyPreference( index ) {
     input.strengthIndex = STRENGTH_VALUE_MAP.indexOf( preference[4] );
 }
 
-async function removePreference( index, service, user ) {
+async function removePreference( service, user ) {
     const choice = await confirm(`Are you sure want to remove preference [${user}] at [${service}]?`);
     if ( choice === 'confirm') {
+        const index = _queryPreference( service, user )
         preferences.splice( index, 1 );
     }
 }
@@ -397,18 +428,6 @@ async function removeAllPreferences() {
     if ( choice === 'confirm') {
         _resetArray( preferences );
     }
-}
-
-function sortColumn( index ) {
-    if ( state.sortIndex === index ) {
-        state.sortDescend = ! state.sortDescend;
-    } else {
-        state.sortIndex = index;
-    }
-    sorters.forEach(( v, i ) => {
-        sorters[i] = '';
-    });
-    sorters[ index ] = ( state.sortDescend ? '↑' : '↓' );
 }
 
 onMounted(() => {
@@ -505,12 +524,12 @@ onMounted(() => {
                     </thead>
                     <tbody>
                         <tr v-for="( v, i ) in preferenceData">
-                            <td><a href="javascript:;" @click="applyPreference(i)">{{v[0]}}</a></td>
-                            <td><a href="javascript:;" @click="applyPreference(i)">{{v[1]}}</a></td>
+                            <td><a href="javascript:;" @click="applyPreference(v[0],v[1])">{{v[0]}}</a></td>
+                            <td><a href="javascript:;" @click="applyPreference(v[0],v[1])">{{v[1]}}</a></td>
                             <td>{{v[2]}}</td>
                             <td>{{v[3]}}</td>
                             <td>{{v[4]}}</td>
-                            <td><a href="javascript:;" @click="removePreference(i,v[0],v[1])">Remove</a></td>
+                            <td><a href="javascript:;" @click="removePreference(v[0],v[1])">Remove</a></td>
                         </tr>
                     </tbody>
                 </table>
