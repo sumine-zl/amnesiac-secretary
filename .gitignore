@@ -1,3 +1,6 @@
+# Force track
+!.gitignore
+
 # OS-specific
 .DS_Store
 ehthumbs.db
@@ -15,11 +18,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Build
-node_modules
-#dist
-dist-ssr
-*.local
+# Builds
+node_modules/
 
-# Force track
-!.gitignore
+# Editors
+/.kilo
+/.vscode
