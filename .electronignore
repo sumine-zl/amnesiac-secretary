@@ -1,0 +1,14 @@
+.git/
+.gitignore
+.kilo/
+LICENSE
+README.md
+electron/dev.mjs
+jsconfig.json
+node_modules/
+package-lock.json
+pub/
+res/
+src/
+vite.config.js
+vitest.config.js

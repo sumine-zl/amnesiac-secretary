@@ -19,6 +19,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Builds
+/build/
 node_modules/
 
 # Editors
