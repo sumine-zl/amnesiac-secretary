@@ -9,9 +9,11 @@
 ## Commands
 | Action | Command |
 |---|---|
-| Dev server (Electron + Vite) | `npm run dev` |
+| Dev server (Vite only) | `npm run dev` |
+| Dev server (Electron + Vite) | `npm run electron:dev` |
 | Build (Vite + electron-builder) | `npm run build` → `dist/` + `build/` |
-| Run built Electron app | `npm run electron` |
+| Vite build only | `npm run build-dist` |
+| Run built Electron app | `npm run electron:preview` |
 | Preview Vite build only | `npm run preview` |
 | Run all tests | `npm test` (vitest, verbose reporter) |
 | Run one test file | `npx vitest src/lib/Secretary.test.js` |
@@ -27,9 +29,12 @@ No lint or typecheck scripts configured.
 
 ## Entrypoint
 `electron/main.cjs` — Electron main process.
+`electron/preload.cjs` — Electron preload script (context bridge).
+`electron/dev.mjs` — Dev-mode Electron launcher (starts Vite, then Electron).
 `src/index.js` mounts `IndexApp.vue` to `#app` in the renderer.
 Core crypto logic in `src/lib/Secretary.js` + `src/lib/Util.js`.
 UI component: `src/lib/Dialog.vue`.
+Stylesheets: `src/res/common.css` and `src/res/picocss-fixes.css`.
 
 ## Tests
 - Co-located with source: `src/lib/*.test.js`

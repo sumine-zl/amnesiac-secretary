@@ -1,16 +1,3 @@
-# Allowed for indexing
-!/docs/
-!/electron/
-!/src/
-!/jsconfig.json
-!/AGENTS.md
-!/index.html
-!/LICENSE.txt
-!/package.json
-!/README.md
-!/vite.config.js
-!/vitest.config.js
-
-# Denied for anythine else
-*
-*.*
+/.kilo/
+/build/
+/node_modules/
