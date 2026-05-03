@@ -535,11 +535,13 @@ onMounted(() => {
             </fieldset>
         </section>
     </article>
-    <hr class="separator" />
-    <section>
-        <small class="footnote">Copyright &copy; 2024-2025 Sumine ZL</small>
-        <small class="footnote right">Amnesiac Secretary v{{VERSION}} (<a target="_blank" :href="SOURCE_REPO">Source Code</a>)</small>
-    </section>
+    <footer>
+        <hr class="separator" />
+        <section>
+            <small class="footnote">Copyright &copy; 2024-2025 Sumine ZL</small>
+            <small class="footnote right">Amnesiac Secretary v{{VERSION}} (<a target="_blank" :href="SOURCE_REPO">Source Code</a>)</small>
+        </section>
+    </footer>
 </main>
 <Dialog :open="alertDialog.show" :title="'ALERT'" :message="alertDialog.message" @close="dialogClosed('close')"></Dialog>
 <Dialog :open="confirmDialog.show" :title="'ALERT'" :message="confirmDialog.message" @close="dialogClosed('cancel')">
