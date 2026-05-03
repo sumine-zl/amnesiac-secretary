@@ -436,10 +436,9 @@ onMounted(() => {
 </script>
 
 <template>
-<div v-if="!features.crypto">Your browser does not support WebCrypto, try with another one</div>
-<div v-else-if="!features.compress">Your browser does not support CompressionStream, try with another one</div>
+<div v-if="!features.crypto">Your browser does not support WebCrypto, please try with another one</div>
+<div v-else-if="!features.compress">Your browser does not support CompressionStream, please try with another one</div>
 <main class="container" v-else>
-    <br />
     <article style="background-color:gold;font-size:0.8em;" v-show="HOSTNAME === 'sumine-zl.github.io'">
         <span>This page is for demonstration only. For security, please build from the <a target="_blank" :href="SOURCE_REPO">source repo</a> and run it by yourself.</span>
     </article>

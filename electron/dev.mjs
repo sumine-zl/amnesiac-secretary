@@ -6,7 +6,7 @@ import path from 'path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const VITE_PORT = 5173;
-const VITE_URL = `http://localhost:${VITE_PORT}`;
+const VITE_URL = `http://127.0.0.1:${VITE_PORT}`;
 const MAX_RETRIES = 120;
 const RETRY_INTERVAL = 500;
 
@@ -29,7 +29,7 @@ function pollServer(url, retries) {
   });
 }
 
-const viteProcess = spawn('npx', ['vite'], {
+const viteProcess = spawn('npx', ['vite', '--host', '127.0.0.1'], {
   stdio: ['ignore', 'inherit', 'inherit'],
   shell: true,
 });
@@ -42,7 +42,7 @@ pollServer(VITE_URL, MAX_RETRIES)
   .then(() => {
     const electronProcess = spawn('npx', ['electron', path.resolve(__dirname, 'main.cjs')], {
       stdio: ['ignore', 'inherit', 'inherit'],
-      env: { ...process.env, ELECTRON_DEV: 'true' },
+      env: { ...process.env, ELECTRON_DEV: '1' },
       shell: true,
     });
 

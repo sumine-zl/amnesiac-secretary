@@ -5,6 +5,10 @@ import '@picocss/pico';
 import './res/picocss-fixes.css';
 import './res/common.css';
 
+if (window.electronAPI) {
+    document.body.classList.add('electron');
+}
+
 createApp( IndexApp )
     .mount('#app')
 ;

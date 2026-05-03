@@ -2,6 +2,23 @@
 
 /* Custom fixes for picocss */
 
+body.electron {
+  --pico-card-box-shadow: none;
+}
+
+main.container {
+    margin-top: 30px;
+}
+
+/* In Electron, use fixed padding instead of responsive breakpoints */
+body.electron main.container {
+  max-width: 960px;
+  padding: var(--pico-spacing);
+  margin-top: 0;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 hr.separator {
     margin-top: 2rem;
 }

@@ -1,7 +1,16 @@
-# Builds
-/build/
-node_modules/
+# Allowed for indexing
+!/docs/
+!/electron/
+!/src/
+!/jsconfig.json
+!/AGENTS.md
+!/index.html
+!/LICENSE.txt
+!/package.json
+!/README.md
+!/vite.config.js
+!/vitest.config.js
 
-# Editors
-/.kilo
-/.vscode
+# Denied for anythine else
+*
+*.*
