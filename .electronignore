@@ -1,8 +1,10 @@
 .git/
 .gitignore
 .kilo/
-LICENSE
+.kiloignore
+AGENTS.md
 README.md
+docs/
 electron/dev.mjs
 jsconfig.json
 node_modules/

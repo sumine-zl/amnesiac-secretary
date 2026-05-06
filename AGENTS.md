@@ -33,7 +33,8 @@ No lint or typecheck scripts configured.
 `electron/dev.mjs` — Dev-mode Electron launcher (starts Vite, then Electron).
 `src/index.js` mounts `IndexApp.vue` to `#app` in the renderer.
 Core crypto logic in `src/lib/Secretary.js` + `src/lib/Util.js`.
-UI component: `src/lib/Dialog.vue`.
+UI components in `src/`: `IndexApp.vue`, `VaultTab.vue`, `GeneratorTab.vue`, `PreferenceList.vue`, `CopyModal.vue`, `PasteModal.vue`, `ConfirmModal.vue`, `ChangePassphraseModal.vue`.
+Shared constants: `src/constants.js`.
 Stylesheets: `src/res/common.css` and `src/res/picocss-fixes.css`.
 
 ## Tests

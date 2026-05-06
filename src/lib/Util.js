@@ -1,4 +1,5 @@
 // Util.js
+// Authored and handmaded by Sumine ZL <sumine_zl+amnesiac-secretary@hotmail.com>
 
 export default {
 

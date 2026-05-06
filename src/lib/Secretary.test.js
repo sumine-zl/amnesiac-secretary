@@ -1,4 +1,5 @@
 // Secretary.test.js
+// Authored and handmaded by Sumine ZL <sumine_zl+amnesiac-secretary@hotmail.com>
 
 import { describe, expect, test } from 'vitest';
 import Secretary from './Secretary'

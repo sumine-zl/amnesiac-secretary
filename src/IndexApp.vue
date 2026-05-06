@@ -1,573 +1,250 @@
 <script setup>
-import { computed, onMounted, reactive } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { version as VERSION } from '../package.json';
 import Util from './lib/Util.js';
 import Secretary from './lib/Secretary.js';
-import Dialog from './lib/Dialog.vue';
-import {  version as VERSION } from '../package.json';
+import { APPLICATION_NAME, SOURCE_REPO } from './constants.js';
+import VaultTab from './VaultTab.vue';
+import GeneratorTab from './GeneratorTab.vue';
+import CopyModal from './CopyModal.vue';
+import PasteModal from './PasteModal.vue';
 
-// Constants
-const APPLICATION_NAME = 'Amnesiac Secretary';
-const SOURCE_REPO = 'https://github.com/sumine-zl/amnesiac-secretary';
 const HOSTNAME = window.location.hostname;
 
-// Configs
-const INPUT_MAX_CIPHER_LENGTH = 4096;
-const INPUT_MAX_REVISION = 15;
-const INPUT_MAX_LENGTH = 32;
-const STRENGTH_VALUE_MAP = [
-    10, 36, 62, 91, 94, 95
-];
+const features = computed(() => ({
+    compress: Util.testCompressionSupport(),
+    crypto: Secretary.testEnvironment(),
+}));
 
-// Defaults
-const defaultState = {
-    unlocked: false,
-    unlocking: false,
-    generating: false,
-    showSecret: false,
-    sortIndex: -1,  // -1 for no sorting
-    sortDescend: false, // false for ascending
-};
-const defaultCredential = {
-    cipherLength: 1024,
-    ciphertext: '',
-    passphrase: ''
-};
-const defaultInput = {
-    service: '',
-    user: '',
-    revision: 0,
-    length: 12,
-    strengthIndex: STRENGTH_VALUE_MAP.indexOf( 91 ),
-    newPass: ''
-};
-const defaultOutput = {
-    secret: '',
-    exportedText: ''
-};
+const unlocked = ref(false);
+const activeTab = ref(0);
+const ciphertext = ref('');
+const preferences = ref([]);
+const exportedOnce = ref(false);
+const lastImportSource = ref(null);
 
-// States
-const state = reactive( Object.assign({}, defaultState ));
-
-// credentials
-const credential = reactive( Object.assign({}, defaultCredential ));
-
-// Inputs
-const input = reactive( Object.assign({}, defaultInput ));
-
-// Outputs
-const output = reactive( Object.assign({}, defaultOutput ));
-
-// Sorters
-const sorters = reactive(['', '', '', '', '']);
-
-// List of preferences
-const preferences = reactive([]);
-
-// Bit length for the new cipher
-const chosenBitLength = computed(() => {
-    return ( ! credential.ciphertext ? credential.cipherLength :
-        'N/A, The existing ciphertext above will be used'
-    );
-});
-// Check for browser features
-const features = computed(() => {
-    return {
-        compress: Util.testCompressionSupport(),
-        crypto: Secretary.testEnvironment()
-    };
-});
-// Disable the inputs except unlock section while under computing
-const inputDisabled = computed(() => {
-    return !state.unlocked || state.generating;
-});
-// Strength value
-const strengthValue = computed(() => {
-    return STRENGTH_VALUE_MAP[ input.strengthIndex ];
-});
-// Strength description
-const strengthDesc = computed(() => {
-    return [
-        'Only numbers from 0 to 9 (NOT RECOMMENDED)',
-        'Numbers and lowercased alphabets',
-        'Numbers, alphabets with both upper and lower cases',
-        'Numbers, alphabets with all cases, special characters excluding Space, Double/Single Quotes, Backslash',
-        'Numbers, alphabets with all cases, special characters excluding Space',
-        'Numbers, alphabets with all cases, special characters including Space (BE CAUTION)'
-    ][ input.strengthIndex ];
-});
-// Data table
-const preferenceData = computed(() => {
-    let data = preferences.slice( 0 );
-    if ( state.sortIndex === -1 ) {
-        return data;
-    }
-    if ( state.sortDescend ) {
-        return data.sort(( a, b ) => {
-            return b[ state.sortIndex ].localeCompare( a[ state.sortIndex ])
-        });
-    } else {
-        return data.sort(( a, b ) => {
-            return a[ state.sortIndex ].localeCompare( b[ state.sortIndex ])
-        });
-    }
-});
-
-// Dialogs
-const alertDialog = reactive({
-    show: false,
-    message: ''
-});
-const confirmDialog = reactive({
-    show: false,
-    message: '',
-    confirmed: false,
-});
-const secretDialog = reactive({
-    show: false
-});
-// Dialog promise resolve
-let dialogResolve = null;
-
-/* Dialog Control *************************************************************/
-
-function _hideAllDialogs() {
-    alertDialog.show = false;
-    confirmDialog.show = false;
-    secretDialog.show = false;
-}
-
-async function alert( msg ) {
-    _hideAllDialogs();
-    alertDialog.message = msg;
-    alertDialog.show = true;
-    return new Promise(( resolve ) => {
-        dialogResolve = resolve;
-    });
-}
-
-async function confirm( msg ) {
-    _hideAllDialogs();
-    confirmDialog.message = msg;
-    confirmDialog.show = true;
-    return new Promise(( resolve ) => {
-        dialogResolve = resolve;
-    });
-}
-
-function dialogClosed( type ) {
-    _hideAllDialogs();
-    dialogResolve( type );
-}
-
-/* Data Reset *****************************************************************/
-
-function _resetArray( array ) {
-    array.splice( 0, array.length );
-}
-
-function _resetObject( target, source ) {
-    for ( const key in source ) {
-        target[ key ] = source[ key ];
-    }
-}
-
-/* Clipboard Access ***********************************************************/
-
-function copyToClipboard( text ) {
-    navigator.clipboard.writeText( text );
-}
-
-function clearClipboard() {
-    navigator.clipboard.writeText('');
-}
-
-/* Section: Unlock ************************************************************/
-
-async function confirmPassphrase() {
-    if ( credential.passphrase.length < 8 ) {
-        await alert('The passphrase must be at least 8 characters');
-        return;
-    }
-    state.unlocking = true;
-    clearClipboard();
-    let ciphertext = credential.ciphertext;
-    let bitLength = credential.cipherLength;
-    let payload = null;
-    if ( ciphertext ) {
-        [ ciphertext, payload ] = ciphertext.split('|');
-    }
-    const passphrase = credential.passphrase;
-    credential.passphrase = '';
-    try {
-        const result = await Secretary.unlock(
-            passphrase,
-            ciphertext,
-            bitLength
-        );
-        if ( ! result ) {
-            throw new Error();
-        }
-        credential.ciphertext = '';
-        state.unlocked = true;
-    } catch ( err ) {
-        alert('Failed to process with the passphrase');  // no wait
-        state.unlocking = false;
-        return;
-    }
-    if ( payload ) {
-        const buf = await Util.decompress( Util.base64ToBuffer( payload ));
-        const arr = JSON.parse( Util.bufferToString( buf ));
-        if ( ! Array.isArray( arr )) {
-            console.error('Invalid preferences data from the ciphertext, discarded');
-        } else {
-            arr.forEach(( v ) => {
-                preferences.push( v );
-            });
-        }
-    }
-    state.unlocking = false;
-}
-
-async function resetPassphrase() {
-    const choice = await confirm('Are you sure want to reset all the data?');
-    if ( choice === 'confirm') {
-        Secretary.reset();
-        _resetObject( output, defaultOutput );
-        _resetObject( input, defaultInput );
-        _resetObject( credential, defaultCredential );
-        _resetObject( state, defaultState );
-        _resetArray( preferences );
-    }
-}
-
-/* Section: Secret ************************************************************/
-
-async function generateSecret() {
-    if ( ! input.service ) {
-        await alert('The service identity cannot be empty');
-        return;
-    }
-    if ( ! input.user ) {
-        await alert('The user identity cannot be empty');
-        return;
-    }
-    state.generating = true;
-    try {
-        output.secret = await Secretary.generate(
-            input.service,
-            input.user,
-            input.revision,
-            input.length,
-            STRENGTH_VALUE_MAP[ input.strengthIndex ]
-        );
-    } catch ( err ) {
-        await alert('Failed to generate secret');
-        state.generating = false;
-        return;
-    }
-    // Overwrite existing item if any
-    let offset = 0;
-    let hit = preferences.some(( v, i ) => {
-        if ( v[0] !== input.service ) {
-            return false;
-        }
-        if ( offset === 0 ) {
-            offset = i;
-        }
-        if ( v[1] !== input.user ) {
-            return false;
-        }
-        preferences[i][2] = input.revision;
-        preferences[i][3] = input.length;
-        preferences[i][4] = STRENGTH_VALUE_MAP[ input.strengthIndex ];
-        return true;
-    });
-    if ( hit ) {
-        state.generating = false;
-        return;
-    }
-    // Insert to the beginning of the array
-    preferences.splice( offset, 0, [
-        input.service,
-        input.user,
-        input.revision,
-        input.length,
-        STRENGTH_VALUE_MAP[ input.strengthIndex ]
-    ]);
-    state.generating = false;
-}
-
-function resetSecret() {
-    _resetObject( output, defaultOutput );
-    _resetObject( input, defaultInput );
-}
-
-async function copySecret() {
-    navigator.clipboard.writeText( output.secret );
-    _resetObject( output, defaultOutput );
-    await alert('The generated secret is copied to the clipboard (Closing this dialog will clear the clipboard)');
-    clearClipboard();
-}
-
-function clearSecret() {
-    _resetObject( output, defaultOutput );
-}
-
-function autofillForm() {
-    if ( input.user ) {
-        return;
-    }
-    // Search from the beginning of te array
-    preferences.some(( v ) => {
-        if ( v[0] !== input.service ) {
-            return false;
-        }
-        input.user = v[1];
-        input.revision = v[2];
-        input.length = v[3];
-        input.strengthIndex = STRENGTH_VALUE_MAP.indexOf( v[4] );
-        return true;
-    });
-}
-
-/* Section: Export ************************************************************/
-
-async function exportCiphertext() {
-    if ( input.newPass && input.newPass.length < 8 ) {
-        await alert('The length of new passphrase must be at least 8 characters');
-        return;
-    }
-    try {
-        output.exportedText = await Secretary.encode( input.newPass );
-    } catch ( err ) {
-        await alert('Failed to export ciphertext');
-        return;
-    }
-}
-
-async function exportAsBundle() {
-    if ( input.newPass && input.newPass.length < 8 ) {
-        await alert('The length of new passphrase must be at least 8 characters');
-        return;
-    }
-    let ciphertext;
-    try {
-        ciphertext = await Secretary.encode( input.newPass );
-    } catch ( err ) {
-        await alert('Failed to export ciphertext');
-        return;
-    }
-    const buf = await Util.compress(
-        Util.stringToBuffer(
-            JSON.stringify( preferences )
-        )
-    );
-    const payload = Util.bufferToBase64( buf );
-    output.exportedText = ciphertext + '|' + payload;
-}
-
-async function copyBundle() {
-    copyToClipboard( output.exportedText );
-    _resetObject( output, defaultOutput );
-    await alert('The exported bundle/cipertext is copied to the clipboard (Closing this dialog will clear the clipboard)');
-    clearClipboard();
-}
-
-function clearBundle() {
-    _resetObject( output, defaultOutput );
-}
-
-/* Section: Latest Preferences ************************************************/
-
-// Return the index of the item in `preferences`
-function _queryPreference( service, user ) {
-    let index = -1;
-    preferences.some(( v, i ) => {
-        if ( v[0] === service && v[1] === user ) {
-            index = i;
-            return true;
-        }
-        return false;
-    });
-    return index;
-}
-
-function sortColumn( index ) {
-    if ( state.sortIndex === index ) {
-        state.sortDescend = ! state.sortDescend;
-    } else {
-        state.sortIndex = index;
-        state.sortDescend = false;
-    }
-    sorters.forEach(( v, i ) => {
-        sorters[i] = '';
-    });
-    sorters[ index ] = ( state.sortDescend ? '↑' : '↓' );
-}
-
-function applyPreference( service, user ) {
-    const index = _queryPreference( service, user );
-    const preference = preferences[ index ];
-    input.service = preference[0];
-    input.user = preference[1];
-    input.revision = preference[2];
-    input.length = preference[3];
-    input.strengthIndex = STRENGTH_VALUE_MAP.indexOf( preference[4] );
-}
-
-async function removePreference( service, user ) {
-    const choice = await confirm(`Are you sure want to remove preference [${user}] at [${service}]?`);
-    if ( choice === 'confirm') {
-        const index = _queryPreference( service, user )
-        preferences.splice( index, 1 );
-    }
-}
-
-async function removeAllPreferences() {
-    const choice = await confirm('Are you sure want to remove all the preferences?');
-    if ( choice === 'confirm') {
-        _resetArray( preferences );
-    }
-}
+const showPasteModal = ref(false);
+const showCopyModal = ref(false);
+const secretToShow = ref('');
 
 onMounted(() => {
     document.title = `${APPLICATION_NAME} v${VERSION}`;
+    const savedCt = localStorage.getItem('ciphertext');
+    if (savedCt) ciphertext.value = savedCt;
+    const savedPrefs = localStorage.getItem('preferences');
+    if (savedPrefs) {
+        try {
+            const parsed = JSON.parse(savedPrefs);
+            if (Array.isArray(parsed)) preferences.value = parsed;
+        } catch { /* ignore */ }
+    }
 });
+
+watch(preferences, (val) => {
+    localStorage.setItem('preferences', JSON.stringify(val));
+}, { deep: true });
+
+watch([ciphertext, unlocked], () => {
+    if (ciphertext.value) {
+        if (/^[A-Za-z0-9+/]+=*$/.test(ciphertext.value)) {
+            localStorage.setItem('ciphertext', ciphertext.value);
+        }
+    } else {
+        localStorage.removeItem('ciphertext');
+    }
+});
+
+watch(preferences, () => {
+    exportedOnce.value = false;
+}, { deep: true });
+
+function onUnlockedChange(val, fromCreation) {
+    unlocked.value = val;
+    if (val) lastImportSource.value = null;
+    if (val) activeTab.value = fromCreation ? 1 : 0;
+}
+
+function onCiphertextChange(val) {
+    ciphertext.value = val;
+    lastImportSource.value = 'import';
+    exportedOnce.value = false;
+}
+
+function onPreferencesChange(val) {
+    preferences.value = val;
+}
+
+function onExported() {
+    exportedOnce.value = true;
+}
+
+function onClear() {
+    unlocked.value = false;
+    ciphertext.value = '';
+    preferences.value = [];
+    exportedOnce.value = false;
+    lastImportSource.value = null;
+    localStorage.removeItem('ciphertext');
+    localStorage.removeItem('preferences');
+}
+
+function onGeneratedSecret(secret) {
+    secretToShow.value = secret;
+    showCopyModal.value = true;
+}
+
+function onCopyModalClose() {
+    showCopyModal.value = false;
+    secretToShow.value = '';
+}
+
+function onPasteRequest() {
+    showPasteModal.value = true;
+}
+
+function onPasted(data) {
+    showPasteModal.value = false;
+    if (!data) return;
+    if (data.startsWith('{')) {
+        const parsed = JSON.parse(data);
+        ciphertext.value = parsed.ciphertext;
+        lastImportSource.value = 'paste';
+        exportedOnce.value = false;
+        if (Array.isArray(parsed.preferences)) {
+            preferences.value = parsed.preferences;
+        }
+    } else {
+        ciphertext.value = data;
+        lastImportSource.value = 'paste';
+        exportedOnce.value = false;
+    }
+}
+
+function onPasteCancel() {
+    showPasteModal.value = false;
+}
 </script>
 
 <template>
-<div v-if="!features.crypto">Your browser does not support WebCrypto, please try with another one</div>
-<div v-else-if="!features.compress">Your browser does not support CompressionStream, please try with another one</div>
-<main class="container" v-else>
-    <article style="background-color:gold;font-size:0.8em;" v-show="HOSTNAME === 'sumine-zl.github.io'">
-        <span>This page is for demonstration only. For security, please build from the <a target="_blank" :href="SOURCE_REPO">source repo</a> and run it by yourself.</span>
-    </article>
-    <article>
-        <section>
-            <fieldset>
-                <label>#1 Paste existing ciphertext if available:</label>
-                <textarea v-model.trim="credential.ciphertext" :disabled="state.unlocked" :aria-busy="state.unlocking" placeholder="Leaving this empty will generate a new one automatically"></textarea>
-                <label>#0 Or choose a bit length for the new cipher: <span>{{chosenBitLength}}</span></label>
-                <input type="range" min="256" :max="INPUT_MAX_CIPHER_LENGTH" step="256" v-model.number="credential.cipherLength" :disabled="state.unlocked || credential.ciphertext.length > 0" />
-                <label>#2 Enter the passphrase for the ciphertext:</label>
-                <input type="password" v-model="credential.passphrase" required :disabled="state.unlocked" :placeholder="(credential.ciphertext ? 'The passphrase of the ciphertext above' : 'Use a memorable passphrase for the new cipher')" @keyup.enter="confirmPassphrase" />
-                <small>Do not save this passphrase in any place other than in your brain, you only need to remember this one</small>
-                <div class="grid">
-                    <button :disabled="state.unlocked" :aria-busy="state.unlocking" aria-label="Unlocking..." @click="confirmPassphrase">{{(state.unlocked ? 'Unlocked' : '#3 Confirm')}}</button>
-                    <button class="outline" :disabled="state.unlocking" @click="resetPassphrase">#9 Reset</button>
-                </div>
-            </fieldset>
-        </section>
-        <hr class="separator" />
-        <section>
-            <fieldset>
-                <label>#4 Service identity, case-sensitive:</label>
-                <input type="text" v-model.trim="input.service" :disabled="inputDisabled" placeholder="Domain Name / Software Title / etc." @input="clearSecret();autofillForm()" />
-                <label>#5 User identity, case-sensitive:</label>
-                <input type="text" v-model.trim="input.user" :disabled="inputDisabled" placeholder="Username / Email / etc." @input="clearSecret" />
-                <label>Revision of the secret: <span>{{input.revision}}</span></label>
-                <input type="range" min="0" :max="INPUT_MAX_REVISION" v-model.number="input.revision" :disabled="inputDisabled" @input="clearSecret" />
-                <label>Length of the secret: <span>{{input.length}}</span></label>
-                <input type="range" min="8" :max="INPUT_MAX_LENGTH" v-model.number="input.length" :disabled="inputDisabled" @input="clearSecret" />
-                <label>Strength of the secret: <span>{{strengthValue}}</span></label>
-                <input type="range" min="0" :max="STRENGTH_VALUE_MAP.length - 1" v-model.number="input.strengthIndex" :disabled="inputDisabled" @input="clearSecret" />
-                <small>{{strengthDesc}}</small>
-                <div class="grid">
-                    <button :disabled="inputDisabled" :aria-busy="state.generating" @click="generateSecret">#6 Generate</button>
-                    <button class="outline" :disabled="inputDisabled" @click="resetSecret">Reset</button>
-                </div>
-            </fieldset>
-        </section>
-        <hr class="separator" />
-        <section>
-            <fieldset>
-                <label>Generated secret:</label>
-                <input type="password" v-model="output.secret" readonly :disabled="inputDisabled" />
-                <div class="grid">
-                    <button :disabled="inputDisabled || !output.secret" @click="copySecret">#7 Copy</button>
-                    <button class="danger" :disabled="inputDisabled || !output.secret" @click="secretDialog.show = true">Show</button>
-                    <button class="outline" :disabled="inputDisabled" @click="clearSecret">Clear</button>
-                </div>
-            </fieldset>
-        </section>
-        <hr class="separator" />
-        <section>
-            <fieldset>
-                <label>New Passphrase:</label>
-                <input type="password" v-model="input.newPass" :disabled="inputDisabled" placeholder="Leave this empty if you want to keep current passphrase unchanged" />
-                <label>Export ciphertext:</label>
-                <textarea v-model="output.exportedText" readonly :disabled="inputDisabled" placeholder="Choose either [Export Ciphertext] to export only the ciphertext or [Export All] to generate a bundle of ciphertext along with all the preferences"></textarea>
-                <small>NOTICE: Be sure to save the ciphertext in a safe place</small>
-                <div class="grid">
-                    <button :disabled="inputDisabled" @click="exportCiphertext">Export Ciphertext</button>
-                    <button :disabled="inputDisabled" @click="exportAsBundle">#8 Export All</button>
-                    <button class="outline" :disabled="inputDisabled || !output.exportedText" @click="copyBundle">Copy</button>
-                    <button class="outline" :disabled="inputDisabled" @click="clearBundle">Clear</button>
-                </div>
-            </fieldset>
-        </section>
-        <hr class="separator" />
-        <section>
-            <fieldset>
-                <label>Latest preferences:</label>
-                <table>
-                    <thead>
-                        <tr>
-                            <th><a class="sort" href="javascript:;" @click="sortColumn(0)">Service {{sorters[0]}}</a></th>
-                            <th><a href="javascript:;" @click="sortColumn(1)">User {{sorters[1]}}</a></th>
-                            <th>Revision</th>
-                            <th>Length</th>
-                            <th>Strength</th>
-                            <th><a href="javascript:;" @click="removeAllPreferences">Remove All</a></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="( v, i ) in preferenceData">
-                            <td><a href="javascript:;" @click="applyPreference(v[0],v[1])">{{v[0]}}</a></td>
-                            <td><a href="javascript:;" @click="applyPreference(v[0],v[1])">{{v[1]}}</a></td>
-                            <td>{{v[2]}}</td>
-                            <td>{{v[3]}}</td>
-                            <td>{{v[4]}}</td>
-                            <td><a href="javascript:;" @click="removePreference(v[0],v[1])">Remove</a></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </fieldset>
-        </section>
-    </article>
-    <footer>
-        <hr class="separator" />
-        <section>
-            <small class="footnote">Copyright &copy; 2024-2025 Sumine ZL</small>
-            <small class="footnote right">Amnesiac Secretary v{{VERSION}} (<a target="_blank" :href="SOURCE_REPO">Source Code</a>)</small>
-        </section>
-    </footer>
-</main>
-<Dialog :open="alertDialog.show" :title="'ALERT'" :message="alertDialog.message" @close="dialogClosed('close')"></Dialog>
-<Dialog :open="confirmDialog.show" :title="'ALERT'" :message="confirmDialog.message" @close="dialogClosed('cancel')">
-    <template #control>
-        <button @click="dialogClosed('confirm')">Confirm</button>
-    </template>
-</Dialog>
-<Dialog :open="secretDialog.show" :title="'CAUTION'" @close="secretDialog.show=false;state.showSecret=false">
-    <template #content>
-        <input :type="(state.showSecret ? 'text' : 'password')" v-model="output.secret" readonly />
-        <p>Make sure there are no body else at you back!</p>
-    </template>
-    <template #control>
-        <button v-show="!state.showSecret" class="danger" @click="state.showSecret = !state.showSecret">Show the secret</button>
-    </template>
-</Dialog>
+    <div v-if="!features.crypto">Your browser does not support WebCrypto, please try with another one</div>
+    <div v-else-if="!features.compress">Your browser does not support CompressionStream, please try with another one
+    </div>
+    <main class="container" v-else>
+        <article class="demo-warning" v-show="HOSTNAME === 'sumine-zl.github.io'">
+            <span>This page is for demonstration only. For security, please build from the <a target="_blank"
+                    :href="SOURCE_REPO">source repo</a> and run it by yourself.</span>
+        </article>
+
+        <article class="main-frame">
+            <nav role="tablist" class="tab-bar">
+                <button role="tab" :aria-selected="activeTab === 0" :class="{ active: activeTab === 0 }"
+                    @click="activeTab = 0">Vault</button>
+                <button role="tab" :aria-selected="activeTab === 1" :class="{ active: activeTab === 1 }"
+                    :aria-disabled="!unlocked" :disabled="!unlocked" @click="activeTab = 1">Generator</button>
+            </nav>
+
+            <div v-show="activeTab === 0" role="tabpanel">
+                <VaultTab :ciphertext="ciphertext" :preferences="preferences" :unlocked="unlocked"
+                    :exportedOnce="exportedOnce" :lastImportSource="lastImportSource"
+                    @unlocked-change="onUnlockedChange" @ciphertext-change="onCiphertextChange"
+                    @preferences-change="onPreferencesChange" @exported="onExported" @clear="onClear"
+                    @request-paste="onPasteRequest" />
+            </div>
+
+            <div v-show="activeTab === 1" role="tabpanel">
+                <GeneratorTab :preferences="preferences" :unlocked="unlocked" @preferences-change="onPreferencesChange"
+                    @generated-secret="onGeneratedSecret" />
+            </div>
+        </article>
+
+        <footer class="annotation">
+            <hr class="separator" />
+            <section>
+                <small class="footnote">Copyright &copy; 2024-2026 Sumine ZL</small>
+                <small class="footnote right">Amnesiac Secretary v{{ VERSION }} (<a target="_blank"
+                        :href="SOURCE_REPO">Source Code</a>)</small>
+            </section>
+        </footer>
+    </main>
+
+    <CopyModal :show="showCopyModal" :secret="secretToShow" @close="onCopyModalClose" @copied="() => { }" />
+
+    <PasteModal :show="showPasteModal" @pasted="onPasted" @cancel="onPasteCancel" />
 </template>
 
 <style scoped>
-table {
-    font-size: 0.9em;
+.demo-warning {
+    background-color: gold;
+    font-size: 0.8em;
 }
-table a {
-    text-decoration: none;
+
+.tab-bar {
+    display: flex;
+    border-bottom: 2px solid #ccc;
+    margin-bottom: 1.5rem;
+    gap: 0;
 }
-table a:hover {
-    text-decoration: underline;
+
+.tab-bar button {
+    flex: 1;
+    background: none !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-radius: 0;
+    color: #666;
+    margin: 0;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-size: inherit;
+    margin-bottom: -2px;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.tab-bar button:hover:not(:disabled) {
+    border-bottom-color: #999 !important;
+    background: none !important;
+}
+
+.tab-bar button.active:hover {
+    border-bottom-color: #0066cc !important;
+    color: #0066cc !important;
+}
+
+.tab-bar button.active {
+    color: #0066cc !important;
+    border-bottom-color: #0066cc !important;
+    border-bottom-style: solid !important;
+}
+
+.tab-bar button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.footnote {
+    color: grey;
+    font-size: 14px;
+}
+
+.footnote.right {
+    float: right;
+}
+
+body.electron main.container {
+    padding: var(--pico-spacing);
+    margin-top: 0;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+body.electron article.main-frame {
+    margin: 0;
+    padding: 0;
+}
+
+body.electron footer.annotation {
+    display: none;
 }
 </style>

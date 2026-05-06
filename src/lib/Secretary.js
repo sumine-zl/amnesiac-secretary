@@ -1,4 +1,5 @@
 // Secretary.js
+// Authored and handmaded by Sumine ZL <sumine_zl+amnesiac-secretary@hotmail.com>
 
 import Util from './Util.js';
 
@@ -391,11 +392,27 @@ async function encode( passphrase = '' ) {
     });
 }
 
+async function verifyPassphrase(passphrase, ciphertext) {
+    const saved = { _cipher, _iv, _key, _salt };
+    try {
+        await unlock(passphrase, ciphertext);
+        return true;
+    } catch {
+        return false;
+    } finally {
+        _cipher = saved._cipher;
+        _iv = saved._iv;
+        _key = saved._key;
+        _salt = saved._salt;
+    }
+}
+
 export default {
     testEnvironment,
     reset,
     isUnlocked,
     unlock,
     generate,
-    encode
+    encode,
+    verifyPassphrase
 };

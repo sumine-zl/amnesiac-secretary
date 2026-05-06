@@ -1,4 +1,5 @@
 // Util.test.js
+// Authored and handmaded by Sumine ZL <sumine_zl+amnesiac-secretary@hotmail.com>
 
 import { readFile } from 'node:fs/promises';
 import { describe, expect, test } from 'vitest';
