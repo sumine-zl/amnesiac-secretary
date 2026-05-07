@@ -1,0 +1,14 @@
+{
+  "permission": {
+    "read": {
+      "*": "allow",
+    },
+    "edit": {
+      "src/lib/**": "deny",
+      "*": "allow",
+    },
+  },
+  "watcher": {
+    "ignore": ["build/**", "dist/**", "res/**", "node_modules/**"],
+  },
+}
