@@ -21,11 +21,15 @@
 No lint or typecheck scripts configured.
 
 ## Build quirks
-- `vite-plugin-singlefile` — **Vite produces a single self-contained `dist/index.html`** with all JS/CSS/assets inlined, plus `dist/favicon.ico`.
+- `vite-plugin-singlefile` — **Vite produces a single self-contained `dist/index.html`** with all JS/CSS/assets inlined, plus `dist/favicon.ico` (from `pub/`, the Vite `publicDir`).
+- `vite-plugin-html` (`createHtmlPlugin`) is used to minify `index.html`.
+- `vite-plugin-vue-devtools` is imported but **not** registered in the plugins array (can be enabled for development).
+- `vitest.config.js` merges Vite config + test settings (jsdom, 15s timeout, verbose reporter).
 - `electron-builder` wraps `dist/` + `electron/` + `package.json` into a final package in `build/`.
 - Base URL is `/as/` (vite config).
 - Public directory: `pub/`. Styles directory: `src/res/` (contains `custom.css`).
 - `@` path alias → `./src/*` (configured in `vite.config.js` and `jsconfig.json`).
+- Kilo config (`kilo.jsonc`) **denies** edit permission on `src/lib/**` — do not modify core crypto library sources.
 
 ## Entrypoint
 `electron/main.cjs` — Electron main process.
