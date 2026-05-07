@@ -1,8 +1,6 @@
 // Secretary.js
 // Authored and handmaded by Sumine ZL <sumine_zl+amnesiac-secretary@hotmail.com>
 
-import Util from './Util.js';
-
 const UNIFORM_IV_SIZE = 12;  // in bytes
 const UNIFORM_SALT_SIZE = 16;  // in bytes
 const UNIFORM_KEY_LENGTH = 256;  // in bits
@@ -79,6 +77,77 @@ function _translate( buf, sequences ) {
     return string;
 }
 
+function base64ToBuffer( str ) {
+    return ( Uint8Array.from(
+        window.atob( str ),
+        ( c ) => c.charCodeAt( 0 )
+    )).buffer;
+}
+
+function bufferToBase64( buf ) {
+    return window.btoa( String.fromCharCode( ...( new Uint8Array( buf ))));
+}
+
+function stringToBuffer( str ) {
+    return ( Uint8Array.from(
+        String( str ),
+        ( c ) => c.charCodeAt( 0 )
+    )).buffer;
+}
+
+function bufferToString( buf ) {
+    return String.fromCharCode( ...( new Uint8Array( buf )));
+}
+
+function pack( arr ) {
+    let total = 0;
+    const seq = arr.map(( v ) => {
+        const data = new Uint8Array( v );
+        const size = new Uint8Array(
+            (new Uint32Array([ data.byteLength ])).buffer
+        );
+        const unit = 4;  // fixed
+        const chunk = new Uint8Array(
+            1 + size.byteLength + data.byteLength
+        );
+        chunk.set([ unit ], 0 );
+        chunk.set( size, 1 );
+        chunk.set( data, 1 + unit );
+        total += chunk.byteLength;
+        return chunk;
+    });
+    const buf = new Uint8Array( total );
+    let offset = 0;
+    seq.forEach(( v ) => {
+        buf.set( v, offset );
+        offset += v.byteLength;
+    });
+    return buf.buffer;
+}
+
+function unpack( buf ) {
+    buf = new Uint8Array( buf );
+    const seq = [];
+    let cursor = 0;
+    while ( cursor < buf.byteLength ) {
+        const unit = 4;  // fixed
+        const size = new Uint32Array(
+            ( new Uint8Array(
+                buf.slice( cursor + 1, cursor + 1 + unit )
+            )).buffer
+        );
+        const data = new Uint8Array(
+            buf.slice(
+                cursor + 1 + unit,
+                cursor + 1 + unit + size[0]
+            )
+        );
+        seq.push( data.buffer );
+        cursor += 1 + unit + size[0];
+    }
+    return seq;
+}
+
 async function testEnvironment() {
     const toString = Object.prototype.toString;
     try {
@@ -117,8 +186,8 @@ async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
     return Promise.resolve().then(() => {
         let promise = null;
         if ( ciphertext ) {
-            [ _cipher, _iv, _salt ] = Util.sba4Unpack(
-                Util.base64ToBuffer( ciphertext )
+            [ _cipher, _iv, _salt ] = unpack(
+                base64ToBuffer( ciphertext )
             );
             promise = Promise.resolve();
         } else {
@@ -137,7 +206,7 @@ async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
             );
         }
         return Crypto.digest('SHA-256', new Uint8Array(  // new Uint8array() for passing the goddamn tests
-            Util.stringToBuffer( passphrase )
+            stringToBuffer( passphrase )
         ));
     }).then(( v ) => {  // digested passphrase
         spice = _getSpice( v );
@@ -207,17 +276,17 @@ async function generate(
     let spice = null;
     return Promise.resolve().then(() => {
         return Promise.all([
-            Crypto.digest('SHA-256', new Uint8Array(  // new Uint8array() for passing the goddamn tests
-                Util.stringToBuffer( identity1 )
+            Crypto.digest('SHA-256', new Uint8Array(  // new Uint8Array() for passing the goddamn tests
+                stringToBuffer( identity1 )
             )),
-            Crypto.digest('SHA-256', new Uint8Array(  // new Uint8array() for passing the goddamn tests
-                Util.stringToBuffer( identity2 )
+            Crypto.digest('SHA-256', new Uint8Array(  // new Uint8Array() for passing the goddamn tests
+                stringToBuffer( identity2 )
             )),
-            Crypto.digest('SHA-256', new Uint8Array(  // new Uint8array() for passing the goddamn tests
-                Util.stringToBuffer( revision )
+            Crypto.digest('SHA-256', new Uint8Array(  // new Uint8Array() for passing the goddamn tests
+                stringToBuffer( revision )
             )),
-            Crypto.digest('SHA-256', new Uint8Array(  // new Uint8array() for passing the goddamn tests
-                Util.stringToBuffer( length )
+            Crypto.digest('SHA-256', new Uint8Array(  // new Uint8Array() for passing the goddamn tests
+                stringToBuffer( length )
             ))
         ]);
     }).then(( identities ) => {  // digests of identities
@@ -235,8 +304,8 @@ async function generate(
         spice = _getSpice( v );
         return Crypto.decrypt({
             name: 'AES-GCM',
-            iv: new Uint8Array( _iv )  // new Uint8array() for passing the goddamn tests
-        }, _key, new Uint8Array( _cipher ));  // new Uint8array() for passing the goddamn tests
+            iv: new Uint8Array( _iv )  // new Uint8Array() for passing the goddamn tests
+        }, _key, new Uint8Array( _cipher ));  // new Uint8Array() for passing the goddamn tests
     }).then(( v ) => {  // decrypted cipher
         return Crypto.importKey(
             'raw',
@@ -250,7 +319,7 @@ async function generate(
         return Crypto.deriveBits({
             name: 'PBKDF2',
             hash: 'SHA-256',
-            salt: new Uint8Array( _salt ),  // new Uint8array() for passing the goddamn tests
+            salt: new Uint8Array( _salt ),  // new Uint8Array() for passing the goddamn tests
             iterations: BASE_ITERATION + spice
         }, v, UNIFORM_KEY_LENGTH );
     }).then(( v ) => {  // derived cipher bits
@@ -265,7 +334,7 @@ async function generate(
         return Crypto.deriveBits({
             name: 'HKDF',
             hash: 'SHA-256',
-            salt: new Uint8Array( _salt ),  // new Uint8array() for passing the goddamn tests
+            salt: new Uint8Array( _salt ),  // new Uint8Array() for passing the goddamn tests
             info: context
         }, v, length * 8 );
     }).then(( v ) => {  // generated secret
@@ -334,8 +403,8 @@ async function encode( passphrase = '' ) {
     return Promise.resolve().then(() => {
         if ( passphrase ) {
             return Promise.resolve().then(() => {
-                return Crypto.digest('SHA-256', new Uint8Array(  // new Uint8array() for passing the goddamn tests
-                    Util.stringToBuffer( passphrase )
+                return Crypto.digest('SHA-256', new Uint8Array(  // new Uint8Array() for passing the goddamn tests
+                    stringToBuffer( passphrase )
                 ));
             }).then(( v ) => {  // digested passphrase
                 spice = _getSpice( v );
@@ -350,7 +419,7 @@ async function encode( passphrase = '' ) {
                 return Crypto.deriveKey({
                     name: 'PBKDF2',
                     hash: 'SHA-256',
-                    salt: new Uint8Array( _salt ),  // new Uint8array() for passing the goddamn tests
+                    salt: new Uint8Array( _salt ),  // new Uint8Array() for passing the goddamn tests
                     iterations: BASE_ITERATION + spice
                 }, v, {
                     name: 'AES-GCM',
@@ -363,8 +432,8 @@ async function encode( passphrase = '' ) {
                     v,
                     Crypto.decrypt({
                         name: 'AES-GCM',
-                        iv: new Uint8Array( _iv )  // new Uint8array() for passing the goddamn tests
-                    }, _key, new Uint8Array( _cipher ))  // new Uint8array() for passing the goddamn tests
+                        iv: new Uint8Array( _iv )  // new Uint8Array() for passing the goddamn tests
+                    }, _key, new Uint8Array( _cipher ))  // new Uint8Array() for passing the goddamn tests
                 ]);
             }).then(([ key, cipher ]) => {
                 const iv = _genRand( UNIFORM_IV_SIZE );
@@ -379,8 +448,8 @@ async function encode( passphrase = '' ) {
         }
         return Promise.resolve([ _iv, _cipher ]);
     }).then(([ iv, cipher ]) => {
-        return Util.bufferToBase64(
-            Util.sba4Pack([
+        return bufferToBase64(
+            pack([
                 cipher, iv, _salt
             ])
         );
@@ -408,6 +477,12 @@ async function verifyPassphrase(passphrase, ciphertext) {
 }
 
 export default {
+    base64ToBuffer,
+    bufferToBase64,
+    stringToBuffer,
+    bufferToString,
+    pack,
+    unpack,
     testEnvironment,
     reset,
     isUnlocked,

@@ -14,6 +14,70 @@ function genRandomString( length ) {
 
 describe('Regular procedure', () => {
 
+    test('string <--> buffer inter-conversion', () => {
+        const length = 32;
+        const str = String.fromCharCode( ...(
+            [...Array( length ).keys()].map(( i ) => {
+                return 33 + Math.floor( Math.random() * 94 );
+            })
+        ));
+        let result;
+        result = Secretary.stringToBuffer( str );
+        expect( result ).toBeTruthy();
+        expect( result ).toBeInstanceOf( ArrayBuffer );
+        expect( result.byteLength ).toBe( str.length );
+        result = Secretary.bufferToString( result );
+        expect( result ).toBeTruthy();
+        expect( result ).toBeTypeOf('string');
+        expect( result ).toBe( str );
+    });
+
+    test('buffer <--> base64 inter-conversion', () => {
+        const length = 32;
+        const buf = ( Uint8Array.from(
+            [...Array( length ).keys()].map(( i ) => {
+                return Math.floor( Math.random() * 256 );
+            })
+        )).buffer;
+        let result;
+        result = Secretary.bufferToBase64( buf );
+        expect( result ).toBeTruthy();
+        expect( result ).toBeTypeOf('string');
+        expect( result.length ).toBeGreaterThan( buf.byteLength );
+        result = Secretary.base64ToBuffer( result );
+        expect( result ).toBeTruthy();
+        expect( result ).toBeInstanceOf( ArrayBuffer );
+        expect(( new Uint8Array( result )).toString() ).toBe(
+            ( new Uint8Array( buf )).toString()
+        );
+    });
+
+    test('simple binary array (4 bytes edition) pack & unpack', async () => {
+        const length = 10;
+        const arr = [];
+        for ( let i = 0; i < length; i++ ) {
+            arr.push(( Uint8Array.from(
+                [...Array( length ).keys()].map(( i ) => {
+                    return Math.floor( Math.random() * 256 );
+                })
+            )).buffer );
+        }
+        let result = Secretary.pack( arr );
+        expect( result ).toBeTruthy();
+        expect( result ).toBeInstanceOf( ArrayBuffer );
+        result = Secretary.unpack( result );
+        expect( result ).toBeTruthy();
+        expect( result ).toBeInstanceOf( Array );
+        expect( result ).toHaveLength( length );
+        for ( let i = 0; i < length; i++ ) {
+            expect( result[i] ).toBeTruthy();
+            expect( result[i] ).toBeInstanceOf( ArrayBuffer );
+            expect(( new Uint8Array( result[i])).every(( v, j ) => {
+                return v === ( new Uint8Array( arr[i] ))[j];
+            })).toBeTruthy();
+        }
+    });
+
     test('secret generation', async () => {
         const passphrase = genRandomString( 32 );
         const service = genRandomString( 16 );

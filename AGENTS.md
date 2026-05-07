@@ -24,7 +24,7 @@ No lint or typecheck scripts configured.
 - `vite-plugin-singlefile` — **Vite produces a single self-contained `dist/index.html`** with all JS/CSS/assets inlined, plus `dist/favicon.ico`.
 - `electron-builder` wraps `dist/` + `electron/` + `package.json` into a final package in `build/`.
 - Base URL is `/as/` (vite config).
-- Public directory: `pub/`. Assets directory: `res/`.
+- Public directory: `pub/`. Styles directory: `src/res/` (contains `custom.css`).
 - `@` path alias → `./src/*` (configured in `vite.config.js` and `jsconfig.json`).
 
 ## Entrypoint
@@ -32,10 +32,10 @@ No lint or typecheck scripts configured.
 `electron/preload.cjs` — Electron preload script (context bridge).
 `electron/dev.mjs` — Dev-mode Electron launcher (starts Vite, then Electron).
 `src/index.js` mounts `IndexApp.vue` to `#app` in the renderer.
-Core crypto logic in `src/lib/Secretary.js` + `src/lib/Util.js`.
-UI components in `src/`: `IndexApp.vue`, `VaultTab.vue`, `GeneratorTab.vue`, `PreferenceList.vue`, `CopyModal.vue`, `PasteModal.vue`, `ConfirmModal.vue`, `ChangePassphraseModal.vue`.
+Core crypto logic in `src/lib/Secretary.js` + `src/lib/Compression.js`.
+UI components in `src/`: `IndexApp.vue`, `VaultTab.vue`, `GeneratorTab.vue`, `PreferenceList.vue`, `CopyModal.vue`, `PasteModal.vue`, `ConfirmModal.vue`, `ChangePassphraseModal.vue`, `AlertModal.vue`.
 Shared constants: `src/constants.js`.
-Stylesheets: `src/res/common.css` and `src/res/picocss-fixes.css`.
+Stylesheets: `src/res/custom.css`.
 
 ## Tests
 - Co-located with source: `src/lib/*.test.js`
@@ -46,5 +46,5 @@ Stylesheets: `src/res/common.css` and `src/res/picocss-fixes.css`.
 ## Architecture
 - Desktop app (Electron). No server, no build-time codegen, no database.
 - Password manager using WebCrypto (AES-GCM-256, PBKDF2, HKDF, SHA-256).
-- Ciphertext embeds preferences via `sba4Pack` binary format + deflate-raw compression.
+- Ciphertext embeds preferences via `pack` binary format + deflate-raw compression.
 - Only directory with meaningful code: `src/` — everything else is config, docs, or build output.

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import Util from './lib/Util.js';
+import Compression from './lib/Compression.js';
 import Secretary from './lib/Secretary.js';
 import { INPUT_MAX_CIPHER_LENGTH } from './constants.js';
 import ChangePassphraseModal from './ChangePassphraseModal.vue';
@@ -61,8 +61,8 @@ async function unlock() {
         if (!result) throw new Error();
         emit('unlocked-change', true, true);
         if (payload) {
-            const buf = await Util.decompress(Util.base64ToBuffer(payload));
-            const arr = JSON.parse(Util.bufferToString(buf));
+            const buf = await Compression.decompress(Secretary.base64ToBuffer(payload));
+            const arr = JSON.parse(Secretary.bufferToString(buf));
             if (Array.isArray(arr)) {
                 const merged = [...props.preferences];
                 arr.forEach(v => merged.push(v));

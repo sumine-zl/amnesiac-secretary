@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import { version as VERSION } from '../package.json';
-import Util from './lib/Util.js';
+import Compression from './lib/Compression.js';
 import Secretary from './lib/Secretary.js';
 import { APPLICATION_NAME, SOURCE_REPO } from './constants.js';
 import VaultTab from './VaultTab.vue';
@@ -12,7 +12,7 @@ import PasteModal from './PasteModal.vue';
 const HOSTNAME = window.location.hostname;
 
 const features = computed(() => ({
-    compress: Util.testCompressionSupport(),
+    compress: Compression.testCompressionSupport(),
     crypto: Secretary.testEnvironment(),
 }));
 

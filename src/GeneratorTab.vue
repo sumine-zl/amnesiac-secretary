@@ -177,7 +177,7 @@ function selectEntry(v) {
                 </div>
             </fieldset>
         </section>
-        <hr class="thin">
+        <hr class="form-prefs-sep">
         <section class="generator-prefs">
             <h5>Preferences</h5>
             <PreferenceList :preferences="preferences" @select-entry="selectEntry"
@@ -190,8 +190,11 @@ function selectEntry(v) {
 </template>
 
 <style scoped>
+.generator-layout {
+    display: block;
+}
+
 .generator-form {
-    margin-bottom: 0;
     min-width: 0;
     grid-area: form;
 }
@@ -201,11 +204,8 @@ function selectEntry(v) {
     grid-area: perfs;
 }
 
-.generator-layout {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-areas: "form perfs";
-    gap: var(--pico-spacing);
+hr.form-prefs-sep {
+    margin-top: 1.5rem;
 }
 
 body.electron .generator-layout {
@@ -225,7 +225,7 @@ body.electron .generator-prefs h5 {
     margin-bottom: 0.5rem;
 }
 
-body.electron hr.thin {
+body.electron hr.form-prefs-sep {
     display: none;
 }
 </style>
