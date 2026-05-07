@@ -1,5 +1,7 @@
 // Compression.js
-// Authored and handmaded by Sumine ZL <sumine_zl+amnesiac-secretary@hotmail.com>
+// The compression library for Amnesiac Secretary
+// Authored and handmaded by Sumine ZL
+// Copyright (c) 2024-2026 Sumine ZL <sumine_zl+amnesiac-secretary@hotmail.com>
 
 export default {
 

@@ -1,5 +1,7 @@
 // Secretary.js
-// Authored and handmaded by Sumine ZL <sumine_zl+amnesiac-secretary@hotmail.com>
+// The core library for Amnesiac Secretary
+// Authored and handmaded by Sumine ZL
+// Copyright (c) 2024-2026 Sumine ZL <sumine_zl+amnesiac-secretary@hotmail.com>
 
 const UNIFORM_IV_SIZE = 12;  // in bytes
 const UNIFORM_SALT_SIZE = 16;  // in bytes
@@ -184,12 +186,10 @@ async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
     let plain = null;
     let spice = null;
     return Promise.resolve().then(() => {
-        let promise = null;
         if ( ciphertext ) {
             [ _cipher, _iv, _salt ] = unpack(
                 base64ToBuffer( ciphertext )
             );
-            promise = Promise.resolve();
         } else {
             let cipherSize = Math.ceil( bitLength / 8 );
             let buf = _genRand(
@@ -205,7 +205,7 @@ async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
                 cipherSize + UNIFORM_IV_SIZE + UNIFORM_SALT_SIZE
             );
         }
-        return Crypto.digest('SHA-256', new Uint8Array(  // new Uint8array() for passing the goddamn tests
+        return Crypto.digest('SHA-256', new Uint8Array(  // new Uint8Array() for passing the goddamn tests
             stringToBuffer( passphrase )
         ));
     }).then(( v ) => {  // digested passphrase
@@ -221,7 +221,7 @@ async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
         return Crypto.deriveKey({
             name: 'PBKDF2',
             hash: 'SHA-256',
-            salt: new Uint8Array( _salt ),  // new Uint8array() for passing the goddamn tests
+            salt: new Uint8Array( _salt ),  // new Uint8Array() for passing the goddamn tests
             iterations: BASE_ITERATION + spice
         }, v, {
             name: 'AES-GCM',
@@ -242,8 +242,8 @@ async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
         } else {
             return Crypto.decrypt({
                 name: 'AES-GCM',
-                iv: new Uint8Array( _iv )  // new Uint8array() for passing the goddamn tests
-            }, _key, new Uint8Array( _cipher ));  // new Uint8array() for passing the goddamn tests
+                iv: new Uint8Array( _iv )  // new Uint8Array() for passing the goddamn tests
+            }, _key, new Uint8Array( _cipher ));  // new Uint8Array() for passing the goddamn tests
         }
     }).then(() => {  // ignore
         return true;

@@ -1,5 +1,6 @@
 // Compression.test.js
-// Authored and handmaded by Sumine ZL <sumine_zl+amnesiac-secretary@hotmail.com>
+// Authored and handmaded by Sumine ZL
+// Copyright (c) 2024-2026 Sumine ZL <sumine_zl+amnesiac-secretary@hotmail.com>
 
 import { readFile } from 'node:fs/promises';
 import { describe, expect, test } from 'vitest';
