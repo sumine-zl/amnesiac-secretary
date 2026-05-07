@@ -2,6 +2,7 @@
 // Authored and handmaded by Sumine ZL
 // Copyright (c) 2024-2026 Sumine ZL <sumine_zl+amnesiac-secretary@hotmail.com>
 
+import { readFile } from 'node:fs/promises';
 import { describe, expect, test } from 'vitest';
 import Secretary from './Secretary'
 
@@ -46,6 +47,21 @@ describe('Regular procedure', () => {
         expect( result ).toBeTypeOf('string');
         expect( result.length ).toBeGreaterThan( buf.byteLength );
         result = Secretary.base64ToBuffer( result );
+        expect( result ).toBeTruthy();
+        expect( result ).toBeInstanceOf( ArrayBuffer );
+        expect(( new Uint8Array( result )).toString() ).toBe(
+            ( new Uint8Array( buf )).toString()
+        );
+    });
+
+    test('buffer compression & decompression', async () => {
+        const str = await readFile( __filename, 'utf8');
+        const buf = Secretary.stringToBuffer( str );
+        let result;
+        result = await Secretary.compress( buf );
+        expect( result ).toBeTruthy();
+        expect( result.byteLength ).toBeLessThan( buf.byteLength );
+        result = await Secretary.decompress( result );
         expect( result ).toBeTruthy();
         expect( result ).toBeInstanceOf( ArrayBuffer );
         expect(( new Uint8Array( result )).toString() ).toBe(

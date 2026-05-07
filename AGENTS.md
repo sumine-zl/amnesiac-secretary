@@ -32,7 +32,7 @@ No lint or typecheck scripts configured.
 `electron/preload.cjs` — Electron preload script (context bridge).
 `electron/dev.mjs` — Dev-mode Electron launcher (starts Vite, then Electron).
 `src/index.js` mounts `IndexApp.vue` to `#app` in the renderer.
-Core crypto logic in `src/lib/Secretary.js` + `src/lib/Compression.js`.
+Core crypto logic in `src/lib/Secretary.js`
 UI components in `src/`: `IndexApp.vue`, `VaultTab.vue`, `GeneratorTab.vue`, `PreferenceList.vue`, `CopyModal.vue`, `PasteModal.vue`, `ConfirmModal.vue`, `ChangePassphraseModal.vue`, `AlertModal.vue`.
 Shared constants: `src/constants.js`.
 Stylesheets: `src/res/custom.css`.

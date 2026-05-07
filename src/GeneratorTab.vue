@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import Secretary from './lib/Secretary.js';
 import { INPUT_MAX_REVISION, INPUT_MAX_LENGTH, STRENGTH_VALUE_MAP } from './constants.js';
 import PreferenceList from './PreferenceList.vue';
@@ -20,6 +20,8 @@ const strengthIndex = ref(STRENGTH_VALUE_MAP.indexOf(91));
 
 const generating = ref(false);
 const showConfirmRemove = ref(false);
+const showConfirmUpdate = ref(false);
+const pendingUpdate = ref(null);
 const removeTarget = ref(null);
 
 const inputDisabled = computed(() => !props.unlocked || generating.value);
@@ -49,7 +51,11 @@ const matchIndex = computed(() => {
     return -1;
 });
 
-const canRemove = computed(() => matchIndex.value >= 0 && !generating.value);
+const canForget = computed(() => matchIndex.value >= 0 && !generating.value);
+
+watch(() => props.unlocked, (val) => {
+    if (!val) resetForm();
+});
 
 function clearOutput() { }
 
@@ -78,38 +84,60 @@ async function generateSecret() {
             length.value,
             STRENGTH_VALUE_MAP[strengthIndex.value]
         );
-        const prefs = [...props.preferences];
-        let hit = false;
-        for (let i = 0; i < prefs.length; i++) {
-            if (prefs[i][0] === service.value && prefs[i][1] === user.value) {
-                prefs[i] = [
-                    service.value,
-                    user.value,
-                    revision.value,
-                    length.value,
-                    STRENGTH_VALUE_MAP[strengthIndex.value]
-                ];
-                hit = true;
-                break;
-            }
-        }
-        if (!hit) {
-            const offset = prefs.length;
-            prefs.splice(0, 0, [
-                service.value,
-                user.value,
-                revision.value,
-                length.value,
-                STRENGTH_VALUE_MAP[strengthIndex.value]
-            ]);
-        }
-        emit('preferences-change', prefs);
         emit('generated-secret', secret);
     } catch {
         generating.value = false;
         return;
     }
     generating.value = false;
+}
+
+function doSave(prefs) {
+    emit('preferences-change', prefs);
+}
+
+function save() {
+    if (!service.value || !user.value) return;
+    const prefs = [...props.preferences];
+    let hit = false;
+    for (let i = 0; i < prefs.length; i++) {
+        if (prefs[i][0] === service.value && prefs[i][1] === user.value) {
+            pendingUpdate.value = i;
+            showConfirmUpdate.value = true;
+            hit = true;
+            break;
+        }
+    }
+    if (!hit) {
+        prefs.splice(0, 0, [
+            service.value,
+            user.value,
+            revision.value,
+            length.value,
+            STRENGTH_VALUE_MAP[strengthIndex.value]
+        ]);
+        doSave(prefs);
+    }
+}
+
+function confirmUpdate() {
+    showConfirmUpdate.value = false;
+    if (pendingUpdate.value === null) return;
+    const prefs = [...props.preferences];
+    prefs[pendingUpdate.value] = [
+        service.value,
+        user.value,
+        revision.value,
+        length.value,
+        STRENGTH_VALUE_MAP[strengthIndex.value]
+    ];
+    pendingUpdate.value = null;
+    doSave(prefs);
+}
+
+function cancelUpdate() {
+    showConfirmUpdate.value = false;
+    pendingUpdate.value = null;
 }
 
 function resetForm() {
@@ -120,13 +148,13 @@ function resetForm() {
     strengthIndex.value = STRENGTH_VALUE_MAP.indexOf(91);
 }
 
-function requestRemove() {
+function requestForget() {
     if (matchIndex.value < 0) return;
     removeTarget.value = props.preferences[matchIndex.value];
     showConfirmRemove.value = true;
 }
 
-function confirmRemove() {
+function confirmForget() {
     showConfirmRemove.value = false;
     if (!removeTarget.value) return;
     const prefs = props.preferences.filter(
@@ -136,7 +164,7 @@ function confirmRemove() {
     removeTarget.value = null;
 }
 
-function cancelRemove() {
+function cancelForget() {
     showConfirmRemove.value = false;
     removeTarget.value = null;
 }
@@ -172,7 +200,8 @@ function selectEntry(v) {
                 <small>{{ strengthDesc }}</small>
                 <div class="grid">
                     <button :disabled="!canGenerate" :aria-busy="generating" @click="generateSecret">Generate</button>
-                    <button :disabled="!canRemove" class="danger" @click="requestRemove">Remove</button>
+                    <button :disabled="!canGenerate || generating" class="outline" @click="save">Save</button>
+                    <button :disabled="!canForget" class="danger" @click="requestForget">Forget</button>
                     <button class="outline" :disabled="inputDisabled" @click="resetForm">Reset</button>
                 </div>
             </fieldset>
@@ -185,8 +214,11 @@ function selectEntry(v) {
         </section>
     </div>
     <ConfirmModal :show="showConfirmRemove"
-        message="Are you sure you want to remove this preference? Type CONFIRM to proceed." requireText="CONFIRM"
-        @confirm="confirmRemove" @cancel="cancelRemove" />
+        message="Are you sure you want to forget this preference? Type CONFIRM to proceed." requireText="CONFIRM"
+        @confirm="confirmForget" @cancel="cancelForget" />
+    <ConfirmModal :show="showConfirmUpdate"
+        message="A preference for this service and user already exists. Update it with the current settings?"
+        @confirm="confirmUpdate" @cancel="cancelUpdate" />
 </template>
 
 <style scoped>

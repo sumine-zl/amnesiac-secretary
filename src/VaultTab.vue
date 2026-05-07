@@ -1,6 +1,5 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import Compression from './lib/Compression.js';
 import Secretary from './lib/Secretary.js';
 import { INPUT_MAX_CIPHER_LENGTH } from './constants.js';
 import ChangePassphraseModal from './ChangePassphraseModal.vue';
@@ -43,31 +42,22 @@ const chosenBitLength = computed(() => {
 watch(passphrase, () => { error.value = ''; });
 
 async function unlock() {
-    if (passphrase.value.length < 8) {
+    if (passphrase.value.length < 1) {
         error.value = 'Passphrase must be at least 8 characters';
         return;
     }
     error.value = '';
     unlocking.value = true;
-    let ct = props.ciphertext;
-    let payload = null;
-    if (ct) {
-        [ct, payload] = ct.split('|');
-    }
+    const ct = props.ciphertext;
     const pp = passphrase.value;
     passphrase.value = '';
     try {
         const result = await Secretary.unlock(pp, ct, cipherLength.value);
         if (!result) throw new Error();
         emit('unlocked-change', true, true);
-        if (payload) {
-            const buf = await Compression.decompress(Secretary.base64ToBuffer(payload));
-            const arr = JSON.parse(Secretary.bufferToString(buf));
-            if (Array.isArray(arr)) {
-                const merged = [...props.preferences];
-                arr.forEach(v => merged.push(v));
-                emit('preferences-change', merged);
-            }
+        const savedPrefs = await Secretary.getData('prefs');
+        if (savedPrefs !== undefined && Array.isArray(savedPrefs)) {
+            emit('preferences-change', savedPrefs);
         }
     } catch {
         error.value = 'Wrong passphrase or invalid ciphertext';
@@ -90,8 +80,7 @@ async function exportBundle() {
         } else {
             ct = props.ciphertext;
         }
-        const bundle = JSON.stringify({ ciphertext: ct, preferences: props.preferences });
-        await saveOrDownload(bundle);
+        await saveOrDownload(ct);
         emit('exported');
     } catch {
         return;
@@ -106,11 +95,11 @@ async function saveOrDownload(content) {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
-    const filename = `Vault-${year}${month}${day}_${hours}${minutes}${seconds}.json`;
+    const filename = `Vault-${year}${month}${day}_${hours}${minutes}${seconds}.txt`;
     if (isElectron.value) {
         await window.electronAPI.saveFile(content, filename);
     } else {
-        const blob = new Blob([content], { type: 'application/json' });
+        const blob = new Blob([content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -143,6 +132,7 @@ async function generateNewVault() {
     passphrase.value = '';
     try {
         await Secretary.unlock(pp, '', cipherLength.value);
+        await Secretary.setData('prefs', []);
         const ct = await Secretary.encode('');
         emit('ciphertext-change', ct);
         emit('unlocked-change', true, true);
@@ -181,24 +171,7 @@ function cancelDelete() {
 
 async function handleImport() {
     async function processContent(text) {
-        const trimmed = text.trim();
-        if (trimmed.startsWith('{')) {
-            try {
-                const parsed = JSON.parse(trimmed);
-                if (typeof parsed.ciphertext !== 'string') {
-                    error.value = 'Invalid JSON: missing "ciphertext" field';
-                    return;
-                }
-                emit('ciphertext-change', parsed.ciphertext);
-                if (Array.isArray(parsed.preferences)) {
-                    emit('preferences-change', parsed.preferences);
-                }
-            } catch {
-                error.value = 'Invalid JSON format';
-            }
-        } else {
-            emit('ciphertext-change', trimmed);
-        }
+        emit('ciphertext-change', text.trim());
     }
     if (isElectron.value) {
         const content = await window.electronAPI.openFile();

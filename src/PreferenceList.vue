@@ -100,6 +100,7 @@ body.electron .preference-list {
 
 body.electron .search-box {
     border-radius: 0.25rem;
+    background-image: none;
     padding-inline: 1rem;
 }
 

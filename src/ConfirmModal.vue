@@ -50,7 +50,7 @@ function onDialogClick(e) {
                 </div>
             </section>
             <footer class="grid">
-                <button @click="confirm" :disabled="requireText && typedText !== requireText">Confirm</button>
+                <button @click="confirm" :disabled="!!requireText && typedText !== requireText">Confirm</button>
                 <button class="secondary" @click="cancel">Cancel</button>
             </footer>
         </article>

@@ -19,6 +19,7 @@ let _cipher = null;
 let _iv = null;
 let _key = null;
 let _salt = null;
+let _payload = null;
 
 function _genRand( size ) {
     return window.crypto.getRandomValues( new Uint8Array( size ));
@@ -101,6 +102,56 @@ function bufferToString( buf ) {
     return String.fromCharCode( ...( new Uint8Array( buf )));
 }
 
+async function compress( buf ) {
+    const stream = new CompressionStream('deflate-raw');
+    const writer = stream.writable.getWriter();
+    writer.write( new Uint8Array( buf ));
+    writer.close();
+    const output = [];
+    let size = 0;
+    const reader = stream.readable.getReader();
+    while ( true ) {
+        const { value, done } = await reader.read();
+        if ( done ) {
+            break;
+        }
+        output.push( value );
+        size += value.byteLength;
+    }
+    const data = new Uint8Array( size );
+    let offset = 0;
+    for ( const chunk of output ) {
+        data.set( chunk, offset );
+        offset += chunk.byteLength;
+    }
+    return data.buffer;
+}
+
+async function decompress( buf ) {
+    const stream = new DecompressionStream('deflate-raw');
+    const writer = stream.writable.getWriter();
+    writer.write( new Uint8Array( buf ));
+    writer.close();
+    const output = [];
+    const reader = stream.readable.getReader();
+    let size = 0;
+    while ( true ) {
+        const { value, done } = await reader.read();
+        if ( done ) {
+            break;
+        }
+        output.push( value );
+        size += value.byteLength;
+    }
+    const data = new Uint8Array( size );
+    let offset = 0;
+    for ( const chunk of output ) {
+        data.set( chunk, offset );
+        offset += chunk.byteLength;
+    }
+    return data.buffer;
+}
+
 function pack( arr ) {
     let total = 0;
     const seq = arr.map(( v ) => {
@@ -150,7 +201,17 @@ function unpack( buf ) {
     return seq;
 }
 
-async function testEnvironment() {
+function testCompressionSupport() {
+    try {
+        return toString.call( CompressionStream ) === '[object Function]' &&
+            toString.call( DecompressionStream ) === '[object Function]'
+        ;
+    } catch ( err ) {
+        return false;
+    }
+}
+
+async function testCryptoSupport() {
     const toString = Object.prototype.toString;
     try {
         const getRandomValues = window.crypto.getRandomValues;
@@ -187,12 +248,12 @@ async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
     let spice = null;
     return Promise.resolve().then(() => {
         if ( ciphertext ) {
-            [ _cipher, _iv, _salt ] = unpack(
+            [ _cipher, _iv, _salt, _payload ] = unpack(
                 base64ToBuffer( ciphertext )
             );
-        } else {
-            let cipherSize = Math.ceil( bitLength / 8 );
-            let buf = _genRand(
+        } else {  // new cipher
+            const cipherSize = Math.ceil( bitLength / 8 );
+            const buf = _genRand(
                 cipherSize + UNIFORM_IV_SIZE + UNIFORM_SALT_SIZE
             );
             plain = buf.slice( 0, cipherSize );
@@ -232,20 +293,21 @@ async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
         ]);
     }).then(( v ) => {  // derived passphrase key
         _key = v;
-        if ( plain ) {
+        if ( plain ) {  // new cipher
             return Crypto.encrypt({
                 name: 'AES-GCM',
                 iv: _iv
-            }, v, plain ).then(( v ) => {  // encrypted cipher
+            }, _key, plain ).then(( v ) => {  // encrypted cipher
                 _cipher = v;
             });
         } else {
+            // Test the key by trying decrypt the cipher
             return Crypto.decrypt({
                 name: 'AES-GCM',
                 iv: new Uint8Array( _iv )  // new Uint8Array() for passing the goddamn tests
             }, _key, new Uint8Array( _cipher ));  // new Uint8Array() for passing the goddamn tests
         }
-    }).then(() => {  // ignore
+    }).then(() => {  // ignore the result
         return true;
     }).catch(( err ) => {
         console.error( err );
@@ -264,6 +326,7 @@ async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
  * 62 - Alphanumerics, with both upper and lower cases
  * 36 - Alphanumerics, with only lower cases
  * 10 - Numbers from 0 to 9
+ * 0  - Raw Base64 without any translations
  */
 async function generate(
     identity1, identity2, revision, length, strength = 91
@@ -340,6 +403,8 @@ async function generate(
     }).then(( v ) => {  // generated secret
         // Unidirectional information tranlation
         switch ( strength ) {
+        case 0:
+            return bufferToBase64( v );
         // 10 - Numbers from 0 to 9
         case 10:
             return _translate( v, [
@@ -394,14 +459,123 @@ async function generate(
     });
 }
 
-async function encode( passphrase = '' ) {
+async function getData( key ) {
+    if ( _payload ) {
+        const Crypto = window.crypto.subtle;
+        return Promise.resolve().then(() => {
+            return Crypto.decrypt({
+                name: 'AES-GCM',
+                iv: new Uint8Array( _iv )  // new Uint8Array() for passing the goddamn tests
+            }, _key, new Uint8Array( _payload ));  // new Uint8Array() for passing the goddamn tests
+        }).then(( v ) => {
+            return decompress( v );
+        }).then(( v ) => {
+            const json = bufferToString( v );
+            if ( ! json ) {
+                return undefined;
+            }
+            const data = JSON.parse( json );
+            return data[ key ];
+        }).catch(( err ) => {
+            console.error( err );
+            return undefined;
+        });
+    } else {
+        return undefined;
+    }
+}
+
+async function setData( key, value ) {
     const Crypto = window.crypto.subtle;
+    return Promise.resolve({}).then(( v ) => {
+        if ( _payload ) {
+            return Crypto.decrypt({
+                name: 'AES-GCM',
+                iv: new Uint8Array( _iv )  // new Uint8Array() for passing the goddamn tests
+            }, _key, new Uint8Array( _payload )).then(( v ) => {  // new Uint8Array() for passing the goddamn tests
+                return decompress( v );
+            }).then(( v ) => {
+                const json = bufferToString( v );
+                if ( ! json ) {
+                    return {};
+                }
+                const data = JSON.parse( json );
+                return data;
+            }).catch(( err ) => {
+                console.error( err );
+                return v;
+            });
+        }
+        return v;
+    }).then(( v ) => {
+        v[ key ] = value;
+        return v;
+    }).then(( v ) => {
+        const json = JSON.stringify( v );
+        const buf = stringToBuffer( json );
+        return compress( buf );
+    }).then(( v ) => {
+        return Crypto.encrypt({
+            name: 'AES-GCM',
+            iv: _iv
+        }, _key, v );
+    }).then(( v ) => {
+        _payload = v;
+    }).catch(( err ) => {
+        console.error( err );
+        throw err;
+    });
+}
+
+async function unsetData( key ) {
+    if ( _payload ) {
+        const Crypto = window.crypto.subtle;
+        let value = undefined;
+        return Promise.resolve().then(() => {
+            return Crypto.decrypt({
+                name: 'AES-GCM',
+                iv: new Uint8Array( _iv )  // new Uint8Array() for passing the goddamn tests
+            }, _key, new Uint8Array( _payload ));  // new Uint8Array() for passing the goddamn tests
+        }).then(( v ) => {
+            return decompress( v );
+        }).then(( v ) => {
+            const json = bufferToString( v );
+            if ( ! json ) {
+                return {};
+            }
+            const data = JSON.parse( json );
+            value = data[ key ];
+            delete data[ key ];
+            return data;
+        }).then(( v ) => {
+            const json = JSON.stringify( v );
+            const buf = stringToBuffer( json );
+            return compress( buf );
+        }).then(( v ) => {
+            return Crypto.encrypt({
+                name: 'AES-GCM',
+                iv: _iv
+            }, _key, v );
+        }).then(( v ) => {
+            _payload = v;
+            return value;
+        }).catch(( err ) => {
+            console.error( err );
+            return undefined;
+        });
+    } else {
+        return undefined;
+    }
+}
+
+async function encode( passphrase = '' ) {
     if ( ! isUnlocked() ) {
         throw new Error('Not unlocked');
     }
+    const Crypto = window.crypto.subtle;
     let spice = null;
     return Promise.resolve().then(() => {
-        if ( passphrase ) {
+        if ( passphrase ) {  // new passphrase
             return Promise.resolve().then(() => {
                 return Crypto.digest('SHA-256', new Uint8Array(  // new Uint8Array() for passing the goddamn tests
                     stringToBuffer( passphrase )
@@ -450,7 +624,7 @@ async function encode( passphrase = '' ) {
     }).then(([ iv, cipher ]) => {
         return bufferToBase64(
             pack([
-                cipher, iv, _salt
+                cipher, iv, _salt, _payload
             ])
         );
     }).catch(( err ) => {
@@ -481,13 +655,19 @@ export default {
     bufferToBase64,
     stringToBuffer,
     bufferToString,
+    compress,
+    decompress,
     pack,
     unpack,
-    testEnvironment,
+    testCompressionSupport,
+    testCryptoSupport,
     reset,
     isUnlocked,
     unlock,
     generate,
+    getData,
+    setData,
+    unsetData,
     encode,
     verifyPassphrase
 };

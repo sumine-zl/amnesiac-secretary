@@ -25,21 +25,15 @@ watch(() => props.show, (val) => {
 function paste() {
     const text = textarea.value.trim();
     if (!text) return;
-    if (text.startsWith('{')) {
-        try {
-            const parsed = JSON.parse(text);
-            if (typeof parsed.ciphertext !== 'string') {
-                error.value = 'Invalid JSON: missing "ciphertext" field';
-                return;
-            }
-            if (parsed.preferences !== undefined && !Array.isArray(parsed.preferences)) {
-                error.value = 'Invalid JSON: "preferences" must be an array';
-                return;
-            }
-        } catch {
-            error.value = 'Invalid JSON format';
-            return;
-        }
+    if (text.length < 40) {
+        error.value = 'Invalid ciphertext (context too short)';
+        return;
+    }
+    try {
+        atob(text);
+    } catch {
+        error.value = 'Invalid ciphertext (not valid base64)';
+        return;
     }
     emit('pasted', text);
 }
@@ -61,9 +55,8 @@ function onDialogClick(e) {
             </header>
             <section>
                 <p v-if="error" style="color:crimson">{{ error }}</p>
-                <label for="paste-area">Paste ciphertext or JSON bundle below:</label>
-                <textarea id="paste-area" v-model="textarea" rows="6"
-                    placeholder="Paste ciphertext or {ciphertext, preferences} JSON here"></textarea>
+                <label for="paste-area">Paste ciphertext below:</label>
+                <textarea id="paste-area" v-model="textarea" rows="6" placeholder="Paste ciphertext here"></textarea>
             </section>
             <footer class="grid">
                 <button @click="paste" :disabled="!textarea.trim()">Apply</button>

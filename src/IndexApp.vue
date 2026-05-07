@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import { version as VERSION } from '../package.json';
-import Compression from './lib/Compression.js';
 import Secretary from './lib/Secretary.js';
 import { APPLICATION_NAME, SOURCE_REPO } from './constants.js';
 import VaultTab from './VaultTab.vue';
@@ -12,8 +11,8 @@ import PasteModal from './PasteModal.vue';
 const HOSTNAME = window.location.hostname;
 
 const features = computed(() => ({
-    compress: Compression.testCompressionSupport(),
-    crypto: Secretary.testEnvironment(),
+    compress: Secretary.testCompressionSupport(),
+    crypto: Secretary.testCryptoSupport(),
 }));
 
 const unlocked = ref(false);
@@ -31,17 +30,16 @@ onMounted(() => {
     document.title = `${APPLICATION_NAME} v${VERSION}`;
     const savedCt = localStorage.getItem('ciphertext');
     if (savedCt) ciphertext.value = savedCt;
-    const savedPrefs = localStorage.getItem('preferences');
-    if (savedPrefs) {
-        try {
-            const parsed = JSON.parse(savedPrefs);
-            if (Array.isArray(parsed)) preferences.value = parsed;
-        } catch { /* ignore */ }
-    }
 });
 
-watch(preferences, (val) => {
-    localStorage.setItem('preferences', JSON.stringify(val));
+watch(preferences, async (val) => {
+    if (Secretary.isUnlocked()) {
+        await Secretary.setData('prefs', val);
+        const newCt = await Secretary.encode('');
+        ciphertext.value = newCt;
+        localStorage.setItem('ciphertext', newCt);
+    }
+    exportedOnce.value = false;
 }, { deep: true });
 
 watch([ciphertext, unlocked], () => {
@@ -53,10 +51,6 @@ watch([ciphertext, unlocked], () => {
         localStorage.removeItem('ciphertext');
     }
 });
-
-watch(preferences, () => {
-    exportedOnce.value = false;
-}, { deep: true });
 
 function onUnlockedChange(val, fromCreation) {
     unlocked.value = val;
@@ -85,7 +79,6 @@ function onClear() {
     exportedOnce.value = false;
     lastImportSource.value = null;
     localStorage.removeItem('ciphertext');
-    localStorage.removeItem('preferences');
 }
 
 function onGeneratedSecret(secret) {
@@ -105,19 +98,9 @@ function onPasteRequest() {
 function onPasted(data) {
     showPasteModal.value = false;
     if (!data) return;
-    if (data.startsWith('{')) {
-        const parsed = JSON.parse(data);
-        ciphertext.value = parsed.ciphertext;
-        lastImportSource.value = 'paste';
-        exportedOnce.value = false;
-        if (Array.isArray(parsed.preferences)) {
-            preferences.value = parsed.preferences;
-        }
-    } else {
-        ciphertext.value = data;
-        lastImportSource.value = 'paste';
-        exportedOnce.value = false;
-    }
+    ciphertext.value = data;
+    lastImportSource.value = 'paste';
+    exportedOnce.value = false;
 }
 
 function onPasteCancel() {
@@ -137,10 +120,11 @@ function onPasteCancel() {
 
         <article class="main-frame">
             <nav role="tablist" class="tab-bar">
-                <button role="tab" :aria-selected="activeTab === 0" :class="{ active: activeTab === 0 }"
-                    @click="activeTab = 0">Vault</button>
-                <button role="tab" :aria-selected="activeTab === 1" :class="{ active: activeTab === 1 }"
-                    :aria-disabled="!unlocked" :disabled="!unlocked" @click="activeTab = 1">Generator</button>
+                <a role="tab" :aria-selected="activeTab === 0" :class="{ active: activeTab === 0 }"
+                    @click="activeTab = 0" href="#">Vault</a>
+                <a role="tab" :aria-selected="activeTab === 1" :class="[{ active: activeTab === 1 }, { disabled: !unlocked }]"
+                    :aria-disabled="!unlocked" @click.prevent="unlocked && (activeTab = 1)"
+                    href="#">Generator</a>
             </nav>
 
             <div v-show="activeTab === 0" role="tabpanel">
@@ -185,8 +169,12 @@ function onPasteCancel() {
     gap: 0;
 }
 
-.tab-bar button {
+.tab-bar a {
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
     background: none !important;
     border-top: none !important;
     border-left: none !important;
@@ -202,23 +190,23 @@ function onPasteCancel() {
     transition: border-color 0.2s, color 0.2s;
 }
 
-.tab-bar button:hover:not(:disabled) {
+.tab-bar a:hover:not(.disabled) {
     border-bottom-color: #999 !important;
     background: none !important;
 }
 
-.tab-bar button.active:hover {
+.tab-bar a.active:hover {
     border-bottom-color: #0066cc !important;
     color: #0066cc !important;
 }
 
-.tab-bar button.active {
+.tab-bar a.active {
     color: #0066cc !important;
     border-bottom-color: #0066cc !important;
     border-bottom-style: solid !important;
 }
 
-.tab-bar button:disabled {
+.tab-bar a.disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
