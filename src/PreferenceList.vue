@@ -72,11 +72,6 @@ function strengthLabel(val) {
 </template>
 
 <style scoped>
-.preference-list {
-    max-height: 50vh;
-    overflow-y: auto;
-}
-
 .preference-list table {
     font-size: 0.9em;
 }

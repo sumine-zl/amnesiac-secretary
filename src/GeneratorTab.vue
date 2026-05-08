@@ -175,6 +175,7 @@ function selectEntry(v) {
     revision.value = v[2];
     length.value = v[3];
     strengthIndex.value = STRENGTH_VALUE_MAP.indexOf(v[4]);
+    window.scrollTo(0, 0);
 }
 </script>
 
