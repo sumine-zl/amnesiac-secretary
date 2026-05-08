@@ -161,9 +161,6 @@ function pack( arr ) {
             (new Uint32Array([ data.byteLength ])).buffer
         );
         const unit = 4;  // fixed
-        if ( size.byteLength > unit ) {
-            throw new Error('Overlarged data cell');
-        }
         const cell = new Uint8Array(
             1 + size.byteLength + data.byteLength
         );
@@ -190,7 +187,7 @@ function unpack( buf ) {
     const unit = 4;  // fixed
     const limit = 1 + unit;
     let cursor = 0;
-    while (( cursor + limit ) < buf.byteLength ) {
+    while (( cursor + limit ) <= buf.byteLength ) {
         const size = new Uint32Array(
             (new Uint8Array(
                 buf.slice( cursor + 1, cursor + 1 + unit )
@@ -642,10 +639,12 @@ async function encode( passphrase = '' ) {
                         name: 'AES-GCM',
                         iv: new Uint8Array( _iv )  // new Uint8Array() for passing the goddamn tests
                     }, _key, new Uint8Array( _cipher )),  // new Uint8Array() for passing the goddamn tests
-                    Crypto.decrypt({
-                        name: 'AES-GCM',
-                        iv: new Uint8Array( _piv )  // new Uint8Array() for passing the goddamn tests
-                    }, _key, new Uint8Array( _payload ))  // new Uint8Array() for passing the goddamn tests
+                    ( _payload ? Crypto.decrypt({
+                            name: 'AES-GCM',
+                            iv: new Uint8Array( _piv )  // new Uint8Array() for passing the goddamn tests
+                        }, _key, new Uint8Array( _payload ))  // new Uint8Array() for passing the goddamn tests
+                        : null
+                    )
                 ]);
             }).then(([ key, plain, payload ]) => {
                 const iv = _genRand( UNIFORM_IV_SIZE );
@@ -657,10 +656,12 @@ async function encode( passphrase = '' ) {
                         iv: new Uint8Array( iv )  // new Uint8Array() for passing the goddamn tests
                     }, key, new Uint8Array( plain )),  // new Uint8Array() for passing the goddamn tests
                     piv,
-                    Crypto.encrypt({
-                        name: 'AES-GCM',
-                        iv: new Uint8Array( piv )  // new Uint8Array() for passing the goddamn tests
-                    }, key, new Uint8Array( payload ))  // new Uint8Array() for passing the goddamn tests
+                    ( payload ? Crypto.encrypt({
+                            name: 'AES-GCM',
+                            iv: new Uint8Array( piv )  // new Uint8Array() for passing the goddamn tests
+                        }, key, new Uint8Array( payload ))  // new Uint8Array() for passing the goddamn tests
+                        : null
+                    )
                 ]);
             });
         }

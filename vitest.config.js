@@ -10,6 +10,7 @@ export default mergeConfig(
             exclude: [ ...configDefaults.exclude ],
             reporters: ['verbose'],
             root: fileURLToPath( new URL( './', import.meta.url )),
+            setupFiles: ['./vitest.setup.js'],
             testTimeout: 15000,
         },
     }),
