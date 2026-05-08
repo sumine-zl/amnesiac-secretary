@@ -57,8 +57,6 @@ watch(() => props.unlocked, (val) => {
     if (!val) resetForm();
 });
 
-function clearOutput() { }
-
 function autofillForm() {
     if (user.value) return;
     for (const v of props.preferences) {
@@ -185,19 +183,19 @@ function selectEntry(v) {
             <fieldset>
                 <label>Service identity, case-sensitive:</label>
                 <input type="text" v-model.trim="service" :disabled="inputDisabled"
-                    placeholder="Domain Name / Software Title / etc." @input="clearOutput(); autofillForm()" />
+                    placeholder="Domain Name / Software Title / etc." @input="autofillForm()" />
                 <label>User identity, case-sensitive:</label>
                 <input type="text" v-model.trim="user" :disabled="inputDisabled" placeholder="Username / Email / etc."
-                    @input="clearOutput" />
+                />
                 <label>Revision: <strong>{{ revision }}</strong></label>
                 <input type="range" min="0" :max="INPUT_MAX_REVISION" v-model.number="revision"
-                    :disabled="inputDisabled" @input="clearOutput" />
+                    :disabled="inputDisabled" />
                 <label>Length: <strong>{{ length }}</strong></label>
                 <input type="range" min="8" :max="INPUT_MAX_LENGTH" v-model.number="length" :disabled="inputDisabled"
-                    @input="clearOutput" />
+                     />
                 <label>Strength: <strong>{{ strengthValue }}</strong></label>
                 <input type="range" min="0" :max="STRENGTH_VALUE_MAP.length - 1" v-model.number="strengthIndex"
-                    :disabled="inputDisabled" @input="clearOutput" />
+                    :disabled="inputDisabled" />
                 <small>{{ strengthDesc }}</small>
                 <div class="grid">
                     <button :disabled="!canGenerate" :aria-busy="generating" @click="generateSecret">Generate</button>

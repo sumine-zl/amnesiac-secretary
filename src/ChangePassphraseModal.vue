@@ -48,6 +48,12 @@ async function confirm() {
             return;
         }
         const newCt = await Secretary.encode(newPass.value);
+        const isUnlocked = await Secretary.unlock(newPass.value, newCt);
+        if (!isUnlocked) {
+            error.value = 'Failed to unlock with the new passphrase';
+            working.value = false;
+            return;
+        }
         emit('ciphertext-change', newCt);
     } catch {
         working.value = false;

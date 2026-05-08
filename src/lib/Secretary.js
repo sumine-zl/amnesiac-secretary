@@ -17,8 +17,9 @@ const CHARSET_SPECIAL_29 = "!#$%&()*+,-./:;<=>?@[]^_`{|}~";
 
 let _cipher = null;
 let _iv = null;
-let _key = null;
 let _salt = null;
+let _key = null;
+let _piv = null;
 let _payload = null;
 
 function _genRand( size ) {
@@ -160,20 +161,25 @@ function pack( arr ) {
             (new Uint32Array([ data.byteLength ])).buffer
         );
         const unit = 4;  // fixed
-        const chunk = new Uint8Array(
+        if ( size.byteLength > unit ) {
+            throw new Error('Overlarged data cell');
+        }
+        const cell = new Uint8Array(
             1 + size.byteLength + data.byteLength
         );
-        chunk.set([ unit ], 0 );
-        chunk.set( size, 1 );
-        chunk.set( data, 1 + unit );
-        total += chunk.byteLength;
-        return chunk;
+        cell.set([ unit ], 0 );
+        cell.set( size, 1 );
+        if ( data.byteLength > 0 ) {
+            cell.set( data, 1 + unit );
+        }
+        total += cell.byteLength;
+        return cell;
     });
     const buf = new Uint8Array( total );
     let offset = 0;
-    seq.forEach(( v ) => {
-        buf.set( v, offset );
-        offset += v.byteLength;
+    seq.forEach(( cell ) => {
+        buf.set( cell, offset );
+        offset += cell.byteLength;
     });
     return buf.buffer;
 }
@@ -181,14 +187,24 @@ function pack( arr ) {
 function unpack( buf ) {
     buf = new Uint8Array( buf );
     const seq = [];
+    const unit = 4;  // fixed
+    const limit = 1 + unit;
     let cursor = 0;
-    while ( cursor < buf.byteLength ) {
-        const unit = 4;  // fixed
+    while (( cursor + limit ) < buf.byteLength ) {
         const size = new Uint32Array(
-            ( new Uint8Array(
+            (new Uint8Array(
                 buf.slice( cursor + 1, cursor + 1 + unit )
             )).buffer
         );
+        const end = cursor + 1 + unit + size[0];
+        if ( size[0] === 0 ) {
+            seq.push( null );
+            cursor = end;
+            continue;
+        }
+        if ( end > buf.byteLength ) {
+            throw new Error('Illegal size value');
+        }
         const data = new Uint8Array(
             buf.slice(
                 cursor + 1 + unit,
@@ -196,12 +212,13 @@ function unpack( buf ) {
             )
         );
         seq.push( data.buffer );
-        cursor += 1 + unit + size[0];
+        cursor = end;
     }
     return seq;
 }
 
 function testCompressionSupport() {
+    const toString = Object.prototype.toString;
     try {
         return toString.call( CompressionStream ) === '[object Function]' &&
             toString.call( DecompressionStream ) === '[object Function]'
@@ -233,37 +250,48 @@ async function testCryptoSupport() {
 function reset() {
     _cipher = null;
     _iv = null;
-    _key = null;
     _salt = null;
+    _key = null;
+    _piv = null;
+    _payload = null;
 }
 
 function isUnlocked() {
-    return _cipher && _key && _salt;
+    return !!( _cipher && _key );
 }
 
 async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
-    reset();
     const Crypto = window.crypto.subtle;
+    let cipher = null;
+    let iv = null;
+    let key = null;
+    let salt = null;
+    let piv = null;
+    let payload = null;
     let plain = null;
     let spice = null;
     return Promise.resolve().then(() => {
         if ( ciphertext ) {
-            [ _cipher, _iv, _salt, _payload ] = unpack(
+            [ cipher, iv, salt, piv, payload ] = unpack(
                 base64ToBuffer( ciphertext )
             );
         } else {  // new cipher
             const cipherSize = Math.ceil( bitLength / 8 );
             const buf = _genRand(
-                cipherSize + UNIFORM_IV_SIZE + UNIFORM_SALT_SIZE
+                cipherSize + UNIFORM_IV_SIZE * 2 + UNIFORM_SALT_SIZE
             );
             plain = buf.slice( 0, cipherSize );
-            _iv = buf.slice(
+            iv = buf.slice(
                 cipherSize,
                 cipherSize + UNIFORM_IV_SIZE
             );
-            _salt = buf.slice(
+            salt = buf.slice(
                 cipherSize + UNIFORM_IV_SIZE,
                 cipherSize + UNIFORM_IV_SIZE + UNIFORM_SALT_SIZE
+            );
+            piv = buf.slice(
+                cipherSize + UNIFORM_IV_SIZE + UNIFORM_SALT_SIZE,
+                cipherSize + UNIFORM_IV_SIZE * 2 + UNIFORM_SALT_SIZE
             );
         }
         return Crypto.digest('SHA-256', new Uint8Array(  // new Uint8Array() for passing the goddamn tests
@@ -282,7 +310,7 @@ async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
         return Crypto.deriveKey({
             name: 'PBKDF2',
             hash: 'SHA-256',
-            salt: new Uint8Array( _salt ),  // new Uint8Array() for passing the goddamn tests
+            salt: new Uint8Array( salt ),  // new Uint8Array() for passing the goddamn tests
             iterations: BASE_ITERATION + spice
         }, v, {
             name: 'AES-GCM',
@@ -292,22 +320,28 @@ async function unlock( passphrase, ciphertext = '', bitLength = 1024 ) {
             'decrypt'
         ]);
     }).then(( v ) => {  // derived passphrase key
-        _key = v;
+        key = v;
         if ( plain ) {  // new cipher
             return Crypto.encrypt({
                 name: 'AES-GCM',
-                iv: _iv
-            }, _key, plain ).then(( v ) => {  // encrypted cipher
-                _cipher = v;
+                iv: new Uint8Array( iv )  // new Uint8Array() for passing the goddamn tests
+            }, key, new Uint8Array( plain )).then(( v ) => {  // encrypted cipher
+                cipher = v;
             });
         } else {
             // Test the key by trying decrypt the cipher
             return Crypto.decrypt({
                 name: 'AES-GCM',
-                iv: new Uint8Array( _iv )  // new Uint8Array() for passing the goddamn tests
-            }, _key, new Uint8Array( _cipher ));  // new Uint8Array() for passing the goddamn tests
+                iv: new Uint8Array( iv )  // new Uint8Array() for passing the goddamn tests
+            }, key, new Uint8Array( cipher ));  // new Uint8Array() for passing the goddamn tests
         }
     }).then(() => {  // ignore the result
+        _cipher = cipher;
+        _iv = iv;
+        _salt = salt;
+        _key = key;
+        _piv = piv;
+        _payload = payload;
         return true;
     }).catch(( err ) => {
         console.error( err );
@@ -465,7 +499,7 @@ async function getData( key ) {
         return Promise.resolve().then(() => {
             return Crypto.decrypt({
                 name: 'AES-GCM',
-                iv: new Uint8Array( _iv )  // new Uint8Array() for passing the goddamn tests
+                iv: new Uint8Array( _piv )  // new Uint8Array() for passing the goddamn tests
             }, _key, new Uint8Array( _payload ));  // new Uint8Array() for passing the goddamn tests
         }).then(( v ) => {
             return decompress( v );
@@ -491,7 +525,7 @@ async function setData( key, value ) {
         if ( _payload ) {
             return Crypto.decrypt({
                 name: 'AES-GCM',
-                iv: new Uint8Array( _iv )  // new Uint8Array() for passing the goddamn tests
+                iv: new Uint8Array( _piv )  // new Uint8Array() for passing the goddamn tests
             }, _key, new Uint8Array( _payload )).then(( v ) => {  // new Uint8Array() for passing the goddamn tests
                 return decompress( v );
             }).then(( v ) => {
@@ -503,7 +537,7 @@ async function setData( key, value ) {
                 return data;
             }).catch(( err ) => {
                 console.error( err );
-                return v;
+                throw err;
             });
         }
         return v;
@@ -517,8 +551,8 @@ async function setData( key, value ) {
     }).then(( v ) => {
         return Crypto.encrypt({
             name: 'AES-GCM',
-            iv: _iv
-        }, _key, v );
+            iv: new Uint8Array( _piv )  // new Uint8Array() for passing the goddamn tests
+        }, _key, new Uint8Array( v ) );  // new Uint8Array() for passing the goddamn tests
     }).then(( v ) => {
         _payload = v;
     }).catch(( err ) => {
@@ -534,7 +568,7 @@ async function unsetData( key ) {
         return Promise.resolve().then(() => {
             return Crypto.decrypt({
                 name: 'AES-GCM',
-                iv: new Uint8Array( _iv )  // new Uint8Array() for passing the goddamn tests
+                iv: new Uint8Array( _piv )  // new Uint8Array() for passing the goddamn tests
             }, _key, new Uint8Array( _payload ));  // new Uint8Array() for passing the goddamn tests
         }).then(( v ) => {
             return decompress( v );
@@ -554,8 +588,8 @@ async function unsetData( key ) {
         }).then(( v ) => {
             return Crypto.encrypt({
                 name: 'AES-GCM',
-                iv: _iv
-            }, _key, v );
+                iv: new Uint8Array( _piv )  // new Uint8Array() for passing the goddamn tests
+            }, _key, new Uint8Array( v ) );  // new Uint8Array() for passing the goddamn tests
         }).then(( v ) => {
             _payload = v;
             return value;
@@ -607,24 +641,34 @@ async function encode( passphrase = '' ) {
                     Crypto.decrypt({
                         name: 'AES-GCM',
                         iv: new Uint8Array( _iv )  // new Uint8Array() for passing the goddamn tests
-                    }, _key, new Uint8Array( _cipher ))  // new Uint8Array() for passing the goddamn tests
+                    }, _key, new Uint8Array( _cipher )),  // new Uint8Array() for passing the goddamn tests
+                    Crypto.decrypt({
+                        name: 'AES-GCM',
+                        iv: new Uint8Array( _piv )  // new Uint8Array() for passing the goddamn tests
+                    }, _key, new Uint8Array( _payload ))  // new Uint8Array() for passing the goddamn tests
                 ]);
-            }).then(([ key, cipher ]) => {
+            }).then(([ key, plain, payload ]) => {
                 const iv = _genRand( UNIFORM_IV_SIZE );
+                const piv = _genRand( UNIFORM_IV_SIZE );
                 return Promise.all([
                     iv,
                     Crypto.encrypt({
                         name: 'AES-GCM',
-                        iv: iv
-                    }, key, cipher )
+                        iv: new Uint8Array( iv )  // new Uint8Array() for passing the goddamn tests
+                    }, key, new Uint8Array( plain )),  // new Uint8Array() for passing the goddamn tests
+                    piv,
+                    Crypto.encrypt({
+                        name: 'AES-GCM',
+                        iv: new Uint8Array( piv )  // new Uint8Array() for passing the goddamn tests
+                    }, key, new Uint8Array( payload ))  // new Uint8Array() for passing the goddamn tests
                 ]);
             });
         }
-        return Promise.resolve([ _iv, _cipher ]);
-    }).then(([ iv, cipher ]) => {
+        return Promise.resolve([ _iv, _cipher, _piv, _payload ]);
+    }).then(([ iv, cipher, piv, payload ]) => {
         return bufferToBase64(
             pack([
-                cipher, iv, _salt, _payload
+                cipher, iv, _salt, piv, payload
             ])
         );
     }).catch(( err ) => {
@@ -636,17 +680,19 @@ async function encode( passphrase = '' ) {
 }
 
 async function verifyPassphrase(passphrase, ciphertext) {
-    const saved = { _cipher, _iv, _key, _salt };
+    const saved = { _cipher, _iv, _salt, _key, _piv, _payload };  // backup state
     try {
         await unlock(passphrase, ciphertext);
         return true;
     } catch {
         return false;
-    } finally {
+    } finally {  // restore state
         _cipher = saved._cipher;
         _iv = saved._iv;
-        _key = saved._key;
         _salt = saved._salt;
+        _key = saved._key;
+        _piv = saved._piv;
+        _payload = saved._payload;
     }
 }
 

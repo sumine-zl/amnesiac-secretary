@@ -52,7 +52,7 @@ function strengthLabel(val) {
                     <th><a href="#" @click.prevent="toggleSort(0)">Service{{ sortKey === 0 ? (sortDesc ? ' ↑' : ' ↓') :
                         '' }}</a></th>
                     <th><a href="#" @click.prevent="toggleSort(1)">User{{ sortKey === 1 ? (sortDesc ? ' ↑' : ' ↓') : ''
-                            }}</a></th>
+                    }}</a></th>
                     <th>Rev</th>
                     <th>Len</th>
                     <th>Strength</th>
