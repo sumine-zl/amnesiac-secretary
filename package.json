@@ -15,9 +15,10 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build && electron-builder",
     "build-dist": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
     "electron:dev": "node electron/dev.mjs",
     "electron:preview": "electron .",
-    "preview": "vite preview --host 127.0.0.1",
+    "electron:build": "electron-builder",
     "test": "vitest"
   },
   "build": {
