@@ -49,7 +49,7 @@ describe('Utility functions', () => {
 
     describe('stringToBuffer / bufferToString', () => {
         it('round-trips plain text', () => {
-            const str = 'Hello, World! Amnesiac Secretary 0.4.10';
+            const str = 'Hello, World! Amnesiac Secretary';
             const buf = Secretary.stringToBuffer(str);
             const back = Secretary.bufferToString(buf);
             expect(back).toBe(str);
