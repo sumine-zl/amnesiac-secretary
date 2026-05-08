@@ -122,9 +122,9 @@ function onPasteCancel() {
             <nav role="tablist" class="tab-bar">
                 <a role="tab" :aria-selected="activeTab === 0" :class="{ active: activeTab === 0 }"
                     @click="activeTab = 0" href="#">Vault</a>
-                <a role="tab" :aria-selected="activeTab === 1" :class="[{ active: activeTab === 1 }, { disabled: !unlocked }]"
-                    :aria-disabled="!unlocked" @click.prevent="unlocked && (activeTab = 1)"
-                    href="#">Generator</a>
+                <a role="tab" :aria-selected="activeTab === 1"
+                    :class="[{ active: activeTab === 1 }, { disabled: !unlocked }]" :aria-disabled="!unlocked"
+                    @click.prevent="unlocked && (activeTab = 1)" href="#">Generator</a>
             </nav>
 
             <div v-show="activeTab === 0" role="tabpanel">
