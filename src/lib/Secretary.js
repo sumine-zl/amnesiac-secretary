@@ -549,7 +549,7 @@ async function setData( key, value ) {
         return Crypto.encrypt({
             name: 'AES-GCM',
             iv: new Uint8Array( _piv )  // new Uint8Array() for passing the goddamn tests
-        }, _key, new Uint8Array( v ) );  // new Uint8Array() for passing the goddamn tests
+        }, _key, new Uint8Array( v ));  // new Uint8Array() for passing the goddamn tests
     }).then(( v ) => {
         _payload = v;
     }).catch(( err ) => {
@@ -586,7 +586,7 @@ async function unsetData( key ) {
             return Crypto.encrypt({
                 name: 'AES-GCM',
                 iv: new Uint8Array( _piv )  // new Uint8Array() for passing the goddamn tests
-            }, _key, new Uint8Array( v ) );  // new Uint8Array() for passing the goddamn tests
+            }, _key, new Uint8Array( v ));  // new Uint8Array() for passing the goddamn tests
         }).then(( v ) => {
             _payload = v;
             return value;

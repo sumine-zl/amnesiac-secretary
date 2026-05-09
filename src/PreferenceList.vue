@@ -1,14 +1,14 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { STRENGTH_VALUE_MAP } from './constants.js';
+import { ref, computed } from "vue";
+import { STRENGTH_VALUE_MAP } from "./constants.js";
 
 const props = defineProps({
     preferences: { type: Array, default: () => [] },
 });
 
-const emit = defineEmits(['select-entry', 'remove-entry']);
+const emit = defineEmits(["select-entry", "remove-entry"]);
 
-const search = ref('');
+const search = ref("");
 const sortKey = ref(-1);
 const sortDesc = ref(false);
 
@@ -16,7 +16,11 @@ const filtered = computed(() => {
     let data = props.preferences.slice();
     const q = search.value.toLowerCase();
     if (q) {
-        data = data.filter(v => v[0].toLowerCase().includes(q) || v[1].toLowerCase().includes(q));
+        data = data.filter(
+            (v) =>
+                v[0].toLowerCase().includes(q) ||
+                v[1].toLowerCase().includes(q),
+        );
     }
     if (sortKey.value >= 0) {
         data.sort((a, b) => {
@@ -44,15 +48,32 @@ function strengthLabel(val) {
 
 <template>
     <div class="preference-list">
-        <input type="search" class="search-box" v-model="search" placeholder="Search by service or user..." />
-        <div v-if="!filtered.length" class="footnote">No preferences found.</div>
+        <input
+            type="search"
+            class="search-box"
+            v-model="search"
+            placeholder="Search by service or user..."
+        />
+        <div v-if="!filtered.length" class="footnote">
+            No preferences found.
+        </div>
         <table v-else>
             <thead>
                 <tr>
-                    <th><a href="#" @click.prevent="toggleSort(0)">Service{{ sortKey === 0 ? (sortDesc ? ' ↑' : ' ↓') :
-                        '' }}</a></th>
-                    <th><a href="#" @click.prevent="toggleSort(1)">User{{ sortKey === 1 ? (sortDesc ? ' ↑' : ' ↓') : ''
-                    }}</a></th>
+                    <th>
+                        <a href="#" @click.prevent="toggleSort(0)"
+                            >Service{{
+                                sortKey === 0 ? (sortDesc ? " ↑" : " ↓") : ""
+                            }}</a
+                        >
+                    </th>
+                    <th>
+                        <a href="#" @click.prevent="toggleSort(1)"
+                            >User{{
+                                sortKey === 1 ? (sortDesc ? " ↑" : " ↓") : ""
+                            }}</a
+                        >
+                    </th>
                     <th>Rev</th>
                     <th>Len</th>
                     <th>Strength</th>
@@ -60,8 +81,16 @@ function strengthLabel(val) {
             </thead>
             <tbody>
                 <tr v-for="(v, i) in filtered" :key="i">
-                    <td><a href="#" @click.prevent="emit('select-entry', v)">{{ v[0] }}</a></td>
-                    <td><a href="#" @click.prevent="emit('select-entry', v)">{{ v[1] }}</a></td>
+                    <td>
+                        <a href="#" @click.prevent="emit('select-entry', v)">{{
+                            v[0]
+                        }}</a>
+                    </td>
+                    <td>
+                        <a href="#" @click.prevent="emit('select-entry', v)">{{
+                            v[1]
+                        }}</a>
+                    </td>
                     <td>{{ v[2] }}</td>
                     <td>{{ v[3] }}</td>
                     <td>{{ strengthLabel(v[4]) }}</td>
@@ -99,8 +128,8 @@ body.electron .search-box {
     padding-inline: 1rem;
 }
 
-body.electron .preference-list table th:nth-child(n+3),
-body.electron .preference-list table td:nth-child(n+3) {
+body.electron .preference-list table th:nth-child(n + 3),
+body.electron .preference-list table td:nth-child(n + 3) {
     display: none;
 }
 </style>

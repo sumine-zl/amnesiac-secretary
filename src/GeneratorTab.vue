@@ -1,19 +1,23 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
-import Secretary from './lib/Secretary.js';
-import { INPUT_MAX_REVISION, INPUT_MAX_LENGTH, STRENGTH_VALUE_MAP } from './constants.js';
-import PreferenceList from './PreferenceList.vue';
-import ConfirmModal from './ConfirmModal.vue';
+import { ref, computed, watch } from "vue";
+import Secretary from "./lib/Secretary.js";
+import {
+    INPUT_MAX_REVISION,
+    INPUT_MAX_LENGTH,
+    STRENGTH_VALUE_MAP,
+} from "./constants.js";
+import PreferenceList from "./PreferenceList.vue";
+import ConfirmModal from "./ConfirmModal.vue";
 
 const props = defineProps({
     preferences: { type: Array, default: () => [] },
     unlocked: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['preferences-change', 'generated-secret']);
+const emit = defineEmits(["preferences-change", "generated-secret"]);
 
-const service = ref('');
-const user = ref('');
+const service = ref("");
+const user = ref("");
 const revision = ref(0);
 const length = ref(12);
 const strengthIndex = ref(STRENGTH_VALUE_MAP.indexOf(91));
@@ -26,20 +30,23 @@ const removeTarget = ref(null);
 
 const inputDisabled = computed(() => !props.unlocked || generating.value);
 
-const canGenerate = computed(() => props.unlocked && !!service.value && !!user.value && !generating.value);
+const canGenerate = computed(
+    () =>
+        props.unlocked && !!service.value && !!user.value && !generating.value,
+);
 
 const strengthValue = computed(() => STRENGTH_VALUE_MAP[strengthIndex.value]);
 
 const strengthDesc = computed(() => {
     const descs = [
-        'Only numbers from 0 to 9 (not recommended)',
-        'Numbers and lowercase letters',
-        'Numbers, uppercase and lowercase letters',
-        'Numbers, letters, special characters excluding Space, Quotes, and Backslash',
-        'Numbers, letters, special characters excluding Space',
-        'Numbers, letters, special characters including Space (use with caution)',
+        "Only numbers from 0 to 9 (not recommended)",
+        "Numbers and lowercase letters",
+        "Numbers, uppercase and lowercase letters",
+        "Numbers, letters, special characters excluding Space, Quotes, and Backslash",
+        "Numbers, letters, special characters excluding Space",
+        "Numbers, letters, special characters including Space (use with caution)",
     ];
-    return descs[strengthIndex.value] || '';
+    return descs[strengthIndex.value] || "";
 });
 
 const matchIndex = computed(() => {
@@ -53,9 +60,12 @@ const matchIndex = computed(() => {
 
 const canForget = computed(() => matchIndex.value >= 0 && !generating.value);
 
-watch(() => props.unlocked, (val) => {
-    if (!val) resetForm();
-});
+watch(
+    () => props.unlocked,
+    (val) => {
+        if (!val) resetForm();
+    },
+);
 
 function autofillForm() {
     if (user.value) return;
@@ -80,9 +90,9 @@ async function generateSecret() {
             user.value,
             revision.value,
             length.value,
-            STRENGTH_VALUE_MAP[strengthIndex.value]
+            STRENGTH_VALUE_MAP[strengthIndex.value],
         );
-        emit('generated-secret', secret);
+        emit("generated-secret", secret);
     } catch {
         generating.value = false;
         return;
@@ -91,7 +101,7 @@ async function generateSecret() {
 }
 
 function doSave(prefs) {
-    emit('preferences-change', prefs);
+    emit("preferences-change", prefs);
 }
 
 function save() {
@@ -112,7 +122,7 @@ function save() {
             user.value,
             revision.value,
             length.value,
-            STRENGTH_VALUE_MAP[strengthIndex.value]
+            STRENGTH_VALUE_MAP[strengthIndex.value],
         ]);
         doSave(prefs);
     }
@@ -127,7 +137,7 @@ function confirmUpdate() {
         user.value,
         revision.value,
         length.value,
-        STRENGTH_VALUE_MAP[strengthIndex.value]
+        STRENGTH_VALUE_MAP[strengthIndex.value],
     ];
     pendingUpdate.value = null;
     doSave(prefs);
@@ -139,8 +149,8 @@ function cancelUpdate() {
 }
 
 function resetForm() {
-    service.value = '';
-    user.value = '';
+    service.value = "";
+    user.value = "";
     revision.value = 0;
     length.value = 12;
     strengthIndex.value = STRENGTH_VALUE_MAP.indexOf(91);
@@ -156,9 +166,10 @@ function confirmForget() {
     showConfirmRemove.value = false;
     if (!removeTarget.value) return;
     const prefs = props.preferences.filter(
-        v => !(v[0] === removeTarget.value[0] && v[1] === removeTarget.value[1])
+        (v) =>
+            !(v[0] === removeTarget.value[0] && v[1] === removeTarget.value[1]),
     );
-    emit('preferences-change', prefs);
+    emit("preferences-change", prefs);
     removeTarget.value = null;
 }
 
@@ -182,42 +193,111 @@ function selectEntry(v) {
         <section class="generator-form">
             <fieldset>
                 <label>Service identity, case-sensitive:</label>
-                <input type="text" v-model.trim="service" :disabled="inputDisabled"
-                    placeholder="Domain Name / Software Title / etc." @input="autofillForm()" />
-                <label>User identity, case-sensitive:</label>
-                <input type="text" v-model.trim="user" :disabled="inputDisabled" placeholder="Username / Email / etc."
+                <input
+                    type="text"
+                    v-model.trim="service"
+                    :disabled="inputDisabled"
+                    placeholder="Domain Name / Software Title / etc."
+                    @input="autofillForm()"
                 />
-                <label>Revision: <strong>{{ revision }}</strong></label>
-                <input type="range" min="0" :max="INPUT_MAX_REVISION" v-model.number="revision"
-                    :disabled="inputDisabled" />
-                <label>Length: <strong>{{ length }}</strong></label>
-                <input type="range" min="8" :max="INPUT_MAX_LENGTH" v-model.number="length" :disabled="inputDisabled"
-                     />
-                <label>Strength: <strong>{{ strengthValue }}</strong></label>
-                <input type="range" min="0" :max="STRENGTH_VALUE_MAP.length - 1" v-model.number="strengthIndex"
-                    :disabled="inputDisabled" />
+                <label>User identity, case-sensitive:</label>
+                <input
+                    type="text"
+                    v-model.trim="user"
+                    :disabled="inputDisabled"
+                    placeholder="Username / Email / etc."
+                />
+                <label
+                    >Revision: <strong>{{ revision }}</strong></label
+                >
+                <input
+                    type="range"
+                    min="0"
+                    :max="INPUT_MAX_REVISION"
+                    v-model.number="revision"
+                    :disabled="inputDisabled"
+                />
+                <label
+                    >Length: <strong>{{ length }}</strong></label
+                >
+                <input
+                    type="range"
+                    min="8"
+                    :max="INPUT_MAX_LENGTH"
+                    v-model.number="length"
+                    :disabled="inputDisabled"
+                />
+                <label
+                    >Strength: <strong>{{ strengthValue }}</strong></label
+                >
+                <input
+                    type="range"
+                    min="0"
+                    :max="STRENGTH_VALUE_MAP.length - 1"
+                    v-model.number="strengthIndex"
+                    :disabled="inputDisabled"
+                />
                 <small>{{ strengthDesc }}</small>
                 <div class="grid">
-                    <button :disabled="!canGenerate" :aria-busy="generating" @click="generateSecret">Generate</button>
-                    <button :disabled="!canGenerate || generating" class="outline" @click="save">Save</button>
-                    <button :disabled="!canForget" class="danger" @click="requestForget">Forget</button>
-                    <button class="outline" :disabled="inputDisabled" @click="resetForm">Reset</button>
+                    <button
+                        :disabled="!canGenerate"
+                        :aria-busy="generating"
+                        @click="generateSecret"
+                    >
+                        Generate
+                    </button>
+                    <button
+                        :disabled="!canGenerate || generating"
+                        class="outline"
+                        @click="save"
+                    >
+                        Save
+                    </button>
+                    <button
+                        :disabled="!canForget"
+                        class="danger"
+                        @click="requestForget"
+                    >
+                        Forget
+                    </button>
+                    <button
+                        class="outline"
+                        :disabled="inputDisabled"
+                        @click="resetForm"
+                    >
+                        Reset
+                    </button>
                 </div>
             </fieldset>
         </section>
-        <hr class="form-prefs-sep">
+        <hr class="form-prefs-sep" />
         <section class="generator-prefs">
             <h5>Preferences</h5>
-            <PreferenceList :preferences="preferences" @select-entry="selectEntry"
-                @remove-entry="(v) => { removeTarget = v; showConfirmRemove = true; }" />
+            <PreferenceList
+                :preferences="preferences"
+                @select-entry="selectEntry"
+                @remove-entry="
+                    (v) => {
+                        removeTarget = v;
+                        showConfirmRemove = true;
+                    }
+                "
+            />
         </section>
     </div>
-    <ConfirmModal :show="showConfirmRemove"
-        message="Are you sure you want to forget this preference? Type CONFIRM to proceed." requireText="CONFIRM"
-        @confirm="confirmForget" @cancel="cancelForget" />
-    <ConfirmModal :show="showConfirmUpdate"
+    <ConfirmModal
+        :show="showConfirmRemove"
+        message="Are you sure you want to forget this preference? Type CONFIRM to proceed."
+        requireText="CONFIRM"
+        @confirm="confirmForget"
+        @cancel="cancelForget"
+    />
+    <ConfirmModal
+        :show="showConfirmUpdate"
         message="A preference for this service and user already exists. Update it with the current settings?"
-        @confirm="confirmUpdate" @cancel="cancelUpdate" />
+        @confirm="confirmUpdate"
+        @cancel="cancelUpdate"
+    />
 </template>
 
 <style scoped>

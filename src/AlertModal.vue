@@ -1,25 +1,28 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch } from "vue";
 
 const props = defineProps({
     show: { type: Boolean, default: false },
-    message: { type: String, default: '' },
+    message: { type: String, default: "" },
 });
 
-const emit = defineEmits(['ok']);
+const emit = defineEmits(["ok"]);
 
 const dialogRef = ref(null);
 
-watch(() => props.show, (val) => {
-    if (val) {
-        dialogRef.value?.showModal();
-    } else {
-        dialogRef.value?.close();
-    }
-});
+watch(
+    () => props.show,
+    (val) => {
+        if (val) {
+            dialogRef.value?.showModal();
+        } else {
+            dialogRef.value?.close();
+        }
+    },
+);
 
 function ok() {
-    emit('ok');
+    emit("ok");
 }
 
 function onDialogClick(e) {
