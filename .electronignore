@@ -1,9 +1,8 @@
 .git/
 .gitignore
-.kilo/
-.kiloignore
 AGENTS.md
 README.md
+build/
 docs/
 electron/dev.mjs
 jsconfig.json
