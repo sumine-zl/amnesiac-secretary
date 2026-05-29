@@ -1,26 +1,47 @@
-# Force track
+# .gitignore
+
+# Exceptive files
 !.gitignore
 
-# OS-specific
-.DS_Store
-ehthumbs.db
-Thumbs.db
-
-# Vim-specific
-~*
-
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# Builds
-/build/
+# NodeJS specific files
 node_modules/
 
-# Editors
-/.vscode
+# Temporary files
+/bin/
+/build/
+/target/
+/tmp/
+
+# Linux specific files
+.Trash-*
+.directory
+.fuse_hidden*
+.nfs*
+
+# MacOS specific files
+.AppleDB
+.AppleDesktop
+.AppleDouble
+.DS_Store
+.LSOverride
+._*
+.apdisk
+Network Trash Folder
+Temporary Items
+
+# Windows specific files
+*.stackdump
+$RECYCLE.BIN/
+Thumbs.db
+Thumbs.db[:]encryptable
+[Dd]esktop.ini
+ehthumbs.db
+ehthumbs_vista.db
+
+# Vim specific files
+*.swp
+*.un~
+*~
+.netrwhist
+Session.vim
+Sessionx.vim
