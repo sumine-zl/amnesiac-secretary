@@ -4,7 +4,7 @@ A secreatary for amnesiacs.
 
 > _Experimental project. For personal/educational use only. Not recommended for production._
 
-> _Bug reports and feature proposals rre not guaranteed to be accepted._
+> _Bug reports and feature proposals are not guaranteed to be accepted._
 
 ## License
 
