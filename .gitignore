@@ -1,42 +1,46 @@
 # .gitignore
 
-# Exceptive files
-!.gitignore
-
 # NodeJS specific files
+*-debug.log*
+*-error.log*
+*.log
+bower_components/
+jspm_packages/
+logs/
 node_modules/
+out/
+web_modules/
 
 # Temporary files
-/bin/
 /build/
 /target/
 /tmp/
 
 # Linux specific files
-.Trash-*
 .directory
 .fuse_hidden*
 .nfs*
+.Trash-*
 
 # MacOS specific files
+._*
+.apdisk
 .AppleDB
 .AppleDesktop
 .AppleDouble
 .DS_Store
 .LSOverride
-._*
-.apdisk
 Network Trash Folder
 Temporary Items
 
 # Windows specific files
-*.stackdump
 $RECYCLE.BIN/
-Thumbs.db
-Thumbs.db[:]encryptable
+*.stackdump
 [Dd]esktop.ini
 ehthumbs.db
 ehthumbs_vista.db
+Thumbs.db
+Thumbs.db:encryptable
 
 # Vim specific files
 *.swp
@@ -45,3 +49,16 @@ ehthumbs_vista.db
 .netrwhist
 Session.vim
 Sessionx.vim
+
+# VS Code specific files
+!.vscode/*.code-snippets
+!.vscode/c_cpp_properties.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/tasks.json
+.history/
+.vscode/*
+
+# Exceptional files
+!.gitignore
