@@ -171,6 +171,7 @@ function confirmForget() {
     );
     emit("preferences-change", prefs);
     removeTarget.value = null;
+    resetForm();
 }
 
 function cancelForget() {
